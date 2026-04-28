@@ -1,0 +1,10 @@
+
+#!/bin/bash
+cd ~/Desktop/g-coop
+mkdir -p android/app/src/main/assets
+npx react-native bundle --platform android --dev false --entry-file index.js \
+  --bundle-output android/app/src/main/assets/index.android.bundle \
+  --assets-dest android/app/src/main/res 2>&1
+cd android && ./gradlew assembleDebug
+adb reverse tcp:8081 tcp:8081
+adb install -r app/build/outputs/apk/debug/app-debug.apk
