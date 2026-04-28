@@ -106,9 +106,22 @@ export function useAuth() {
   const authState = useAuthStore();
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      Alert.alert('Connexion impossible', error.message);
+    useAuthStore.getState().setLoading(true);
+
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        Alert.alert('Connexion impossible', error.message);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Une erreur inattendue est survenue.';
+      Alert.alert('Connexion impossible', message);
+      return false;
+    } finally {
+      useAuthStore.getState().setLoading(false);
     }
   };
 

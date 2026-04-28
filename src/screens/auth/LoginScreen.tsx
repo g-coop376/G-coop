@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Keyboard, StyleSheet, View } from 'react-native';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -23,6 +23,11 @@ function LoginScreen({ navigation }: { navigation: { navigate: (screen: string) 
     resolver: zodResolver(schema),
     defaultValues: { email: '', password: '' },
   });
+
+  async function submitLogin(values: FormValues) {
+    Keyboard.dismiss();
+    await signIn(values.email.trim(), values.password);
+  }
 
   return (
     <ScreenContainer scrollable={false} backgroundColor={theme.colors.background}>
@@ -78,7 +83,8 @@ function LoginScreen({ navigation }: { navigation: { navigate: (screen: string) 
               <Button
                 mode="contained"
                 contentStyle={styles.primaryButton}
-                onPress={handleSubmit(values => signIn(values.email, values.password))}
+                disabled={loading}
+                onPress={handleSubmit(submitLogin)}
                 loading={loading}>
                 Login
               </Button>
