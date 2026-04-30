@@ -36,7 +36,7 @@ begin
     from pg_type
     where typname = 'document_type'
   ) then
-    create type document_type as enum ('FAC', 'DEV', 'BDC', 'BDL');
+    create type document_type as enum ('bon_livraison', 'devis', 'facture');
   end if;
 
   if not exists (
@@ -148,6 +148,8 @@ create table if not exists public.documents (
   fournisseur_id uuid references public.fournisseurs(id) on delete set null,
   parent_document_id uuid references public.documents(id) on delete set null,
   notes text,
+  lieu_livraison text,
+  numero_commande text,
   sous_total_ht numeric(12,2) not null default 0,
   taux_tva numeric(5,2) not null default 0,
   montant_tva numeric(12,2) not null default 0,
@@ -169,15 +171,16 @@ create table if not exists public.document_lignes (
   organization_id uuid not null references public.organizations(id) on delete cascade,
   document_id uuid not null references public.documents(id) on delete cascade,
   produit_id uuid references public.produits(id) on delete set null,
-  description text not null,
+  ref text,
+  designation text not null,
   quantite numeric(12,2) not null,
-  prix_unitaire numeric(12,2) not null,
-  total_ligne numeric(12,2) not null,
+  prix_unitaire_ht numeric(12,2) not null,
+  total_ht numeric(12,2) not null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint lignes_quantite_positive check (quantite > 0),
-  constraint lignes_prix_non_negatif check (prix_unitaire >= 0),
-  constraint lignes_total_non_negatif check (total_ligne >= 0)
+  constraint lignes_prix_non_negatif check (prix_unitaire_ht >= 0),
+  constraint lignes_total_non_negatif check (total_ht >= 0)
 );
 
 create table if not exists public.stock_mouvements (
@@ -354,7 +357,7 @@ begin
   end if;
 
   new.organization_id := v_org_id;
-  new.total_ligne := round(new.quantite * new.prix_unitaire, 2);
+  new.total_ht := round(new.quantite * new.prix_unitaire_ht, 2);
   return new;
 end;
 $$;
@@ -369,7 +372,7 @@ declare
   v_subtotal numeric(12,2);
   v_taux_tva numeric(5,2);
 begin
-  select coalesce(sum(total_ligne), 0)
+  select coalesce(sum(total_ht), 0)
   into v_subtotal
   from public.document_lignes
   where document_id = p_document_id;
@@ -423,7 +426,7 @@ begin
     raise exception 'Document % introuvable', p_document_id;
   end if;
 
-  if v_document.type not in ('FAC', 'BDC') then
+  if v_document.type not in ('facture') then
     return;
   end if;
 
@@ -443,16 +446,15 @@ begin
   loop
     v_quantite_avant := v_ligne.quantite_stock;
     v_delta := case
-      when v_document.type = 'FAC' then -1 * v_ligne.quantite
-      when v_document.type = 'BDC' then v_ligne.quantite
+      when v_document.type = 'facture' then -1 * v_ligne.quantite
       else 0
     end;
     v_type := case
-      when v_document.type = 'FAC' then 'facture'::stock_movement_type
+      when v_document.type = 'facture' then 'facture'::stock_movement_type
       else 'bon_commande'::stock_movement_type
     end;
 
-    if v_document.type = 'FAC' and (v_quantite_avant + v_delta) < 0 then
+    if v_document.type = 'facture' and (v_quantite_avant + v_delta) < 0 then
       raise exception 'Stock insuffisant pour le produit %', v_ligne.produit_id;
     end if;
 

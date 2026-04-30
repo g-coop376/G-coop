@@ -25,7 +25,7 @@ function DashboardScreen({ navigation }: { navigation: { navigate: (screen: stri
   const [inviteType, setInviteType] = React.useState<'cooperative' | 'societe'>('cooperative');
 
   const monthlyDocs = documents.filter(doc => doc.date_document.startsWith(selectedMonth));
-  const factures = monthlyDocs.filter(doc => doc.type === 'FAC' && doc.statut === 'valide');
+  const factures = monthlyDocs.filter(doc => doc.type === 'facture' && doc.statut === 'valide');
   const ventes = factures.reduce((sum, doc) => sum + doc.total_ttc, 0);
   const lowStock = produits.filter(produit => produit.quantite_stock <= produit.seuil_minimum);
 
@@ -36,8 +36,8 @@ function DashboardScreen({ navigation }: { navigation: { navigate: (screen: stri
     const docs = documents.filter(doc => doc.date_document.startsWith(month) && doc.statut === 'valide');
     return {
       label: monthLabel(5 - index),
-      ventes: docs.filter(doc => doc.type === 'FAC').reduce((sum, doc) => sum + doc.total_ttc, 0),
-      achats: docs.filter(doc => doc.type === 'BDC').reduce((sum, doc) => sum + doc.total_ttc, 0),
+      ventes: docs.filter(doc => doc.type === 'facture').reduce((sum, doc) => sum + doc.total_ttc, 0),
+      achats: docs.filter(doc => doc.type === 'bon_livraison').reduce((sum, doc) => sum + doc.total_ttc, 0),
     };
   });
 

@@ -13,6 +13,7 @@ interface AuthStore extends AuthState {
   clearDeepLinkState: () => void;
   markInitialized: () => void;
   reset: () => void;
+  clearSession: () => void;
 }
 
 const initialState: AuthState = {
@@ -31,7 +32,7 @@ export const useAuthStore = create<AuthStore>(set => ({
   ...initialState,
   setLoading: loading => set({ loading }),
   setProcessingDeepLink: processingDeepLink => set({ processingDeepLink }),
-  bootstrap: (session, user) => set({ session, user }),
+  bootstrap: (session, user) => set({ session, user, loading: false }),
   setProfile: profile => set({ profile }),
   setOrganization: organization => set({ organization }),
   setPendingAuthScreen: pendingAuthScreen => set({ pendingAuthScreen }),
@@ -39,4 +40,5 @@ export const useAuthStore = create<AuthStore>(set => ({
   clearDeepLinkState: () => set({ pendingAuthScreen: null, deepLinkError: null, processingDeepLink: false }),
   markInitialized: () => set({ initialized: true, loading: false }),
   reset: () => set({ ...initialState, initialized: true }),
+  clearSession: () => set({ session: null, user: null, profile: null, organization: null }),
 }));

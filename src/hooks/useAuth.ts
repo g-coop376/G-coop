@@ -6,12 +6,7 @@ import { useAuthStore } from '../store/authStore';
 import type { Organization, Profile, OrganizationType } from '../types';
 import { useAuthDeepLinking } from './useAuthDeepLinking';
 
-async function fetchProfileAndOrganization(session: Session | null) {
-  if (!session?.user) {
-    useAuthStore.getState().reset();
-    return;
-  }
-
+async function fetchProfileAndOrganization(session: Session) {
   const { data: profileData } = await supabase
     .from('profiles')
     .select('*')
@@ -32,64 +27,58 @@ async function fetchProfileAndOrganization(session: Session | null) {
   }
 
   useAuthStore.getState().bootstrap(session, session.user);
-  useAuthStore.getState().setProfile(profile ?? null);
-  useAuthStore.getState().setOrganization(organization ?? null);
+  useAuthStore.getState().setProfile(profile);
+  useAuthStore.getState().setOrganization(organization);
+  useAuthStore.getState().markInitialized();
+}
+
+async function handleSignOut() {
+  useAuthStore.getState().clearSession();
   useAuthStore.getState().markInitialized();
 }
 
 export function useAuthBootstrap() {
   const initialized = useAuthStore(state => state.initialized);
+  const [isReady, setIsReady] = React.useState(initialized);
   useAuthDeepLinking();
 
   React.useEffect(() => {
     let mounted = true;
+    let profileFetchStarted = false;
 
     const timeoutId = setTimeout(() => {
-      if (mounted && !initialized) {
+      if (mounted && !useAuthStore.getState().initialized) {
         useAuthStore.getState().markInitialized();
       }
     }, 8000);
 
     supabase.auth.getSession().then(async ({ data }) => {
       clearTimeout(timeoutId);
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
 
       const { session } = data;
-      useAuthStore.getState().setLoading(true);
-      useAuthStore.getState().bootstrap(session, session?.user ?? null);
+      profileFetchStarted = true;
 
-      if (session?.user) {
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .maybeSingle();
-
-        const profile = (profileData as Profile | null) ?? null;
-
-        useAuthStore.getState().setProfile(profile ?? null);
-
-        if (profile?.organization_id) {
-          const { data: organizationData } = await supabase
-            .from('organizations')
-            .select('*')
-            .eq('id', profile.organization_id)
-            .maybeSingle();
-          const organization = (organizationData as Organization | null) ?? null;
-          useAuthStore.getState().setOrganization(organization ?? null);
-        } else {
-          useAuthStore.getState().setOrganization(null);
-        }
+      if (session) {
+        await fetchProfileAndOrganization(session);
+      } else {
+        useAuthStore.getState().markInitialized();
       }
-
-      useAuthStore.getState().markInitialized();
     });
 
     const { data: subscription } = supabase.auth.onAuthStateChange(
-      async (_, session) => {
-        await fetchProfileAndOrganization(session);
+      async (event, session) => {
+        if (!mounted) return;
+
+        if (event === 'SIGNED_IN' && session) {
+          await fetchProfileAndOrganization(session);
+        } else if (event === 'SIGNED_OUT') {
+          await handleSignOut();
+        } else if (event === 'TOKEN_REFRESHED' && session && profileFetchStarted) {
+          useAuthStore.getState().bootstrap(session, session.user);
+        } else if (event === 'INITIAL_SESSION') {
+          return;
+        }
       },
     );
 
@@ -99,7 +88,13 @@ export function useAuthBootstrap() {
     };
   }, []);
 
-  return initialized;
+  React.useEffect(() => {
+    if (initialized && !isReady) {
+      setIsReady(true);
+    }
+  }, [initialized, isReady]);
+
+  return isReady;
 }
 
 export function useAuth() {
@@ -126,7 +121,10 @@ export function useAuth() {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch {
+    }
     useAuthStore.getState().reset();
   };
 
@@ -180,7 +178,9 @@ export function useAuth() {
     }
 
     const { data: sessionData } = await supabase.auth.getSession();
-    await fetchProfileAndOrganization(sessionData.session);
+    if (sessionData.session) {
+      await fetchProfileAndOrganization(sessionData.session);
+    }
     return true;
   };
 

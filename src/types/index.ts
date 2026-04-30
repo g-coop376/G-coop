@@ -2,8 +2,14 @@ import type { Session, User } from '@supabase/supabase-js';
 
 export type Role = 'super_admin' | 'mol_org';
 export type OrganizationType = 'cooperative' | 'societe';
-export type DocumentType = 'FAC' | 'DEV' | 'BDC' | 'BDL';
+export type DocumentType = 'bon_livraison' | 'devis' | 'facture';
 export type DocumentStatus = 'brouillon' | 'valide' | 'annule';
+
+export const DOC_TYPE_CONFIG: Record<DocumentType, { label: string; icon: string; color: string; prefix: string }> = {
+  bon_livraison: { label: 'Bon de livraison', icon: 'truck-delivery-outline', color: '#0099CC', prefix: 'BL' },
+  devis: { label: 'Devis', icon: 'file-document-outline', color: '#607D8B', prefix: 'DEV' },
+  facture: { label: 'Facture', icon: 'receipt', color: '#9B1B6E', prefix: 'FAC' },
+};
 export type PendingAuthScreen = 'ResetPassword' | 'SetPassword' | null;
 
 export interface Organization {
@@ -77,6 +83,8 @@ export interface Document {
   fournisseur_id: string | null;
   parent_document_id: string | null;
   notes: string | null;
+  lieu_livraison: string | null;
+  numero_commande: string | null;
   sous_total_ht: number;
   taux_tva: number;
   montant_tva: number;
@@ -86,12 +94,14 @@ export interface Document {
 
 export interface DocumentLigne {
   id: string;
+  organization_id: string;
   document_id: string;
   produit_id: string | null;
-  description: string;
+  ref: string | null;
+  designation: string;
   quantite: number;
-  prix_unitaire: number;
-  total_ligne: number;
+  prix_unitaire_ht: number;
+  total_ht: number;
 }
 
 export interface StockMouvement {
@@ -135,4 +145,26 @@ export interface DocumentWithRelations extends Document {
   client?: Client | null;
   fournisseur?: Fournisseur | null;
   lignes?: DocumentLigne[];
+}
+
+export function getDocTypeConfig(type: DocumentType) {
+  return DOC_TYPE_CONFIG[type];
+}
+
+export function getStatusLabel(statut: DocumentStatus): string {
+  const labels: Record<DocumentStatus, string> = {
+    brouillon: 'Brouillon',
+    valide: 'Validé',
+    annule: 'Annulé',
+  };
+  return labels[statut];
+}
+
+export function getStatusColor(statut: DocumentStatus): string {
+  const colors: Record<DocumentStatus, string> = {
+    brouillon: '#F59E0B',
+    valide: '#16A34A',
+    annule: '#DC2626',
+  };
+  return colors[statut];
 }
