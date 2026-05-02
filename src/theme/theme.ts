@@ -8,8 +8,11 @@ import { MD3DarkTheme, MD3LightTheme, type MD3Theme } from 'react-native-paper';
 export type ThemeMode = 'light' | 'dark';
 
 const baseColors = {
-  primary: '#6B8E23',
-  brand: '#6B8E23',
+  // Primary bleu (comme dans le screenshot)
+  primary: '#1E40AF',
+  primaryLight: '#3B82F6',
+  primaryDark: '#1E3A8A',
+  brand: '#1E40AF',
   secondary: '#C2A878',
   backgroundLight: '#F8F5F0',
   backgroundDark: '#121212',
@@ -25,9 +28,14 @@ const baseColors = {
   outlineDark: '#3A3A3A',
   accent: '#C2A878',
   info: '#8AA55A',
-  success: '#7E9E3B',
+  success: '#16A34A',
   warning: '#D4A657',
-  danger: '#B8574C',
+  danger: '#DC2626',
+  // Status colors
+  statusAvailable: '#16A34A',
+  statusAvailableBg: '#DCFCE7',
+  statusLow: '#EA580C',
+  statusLowBg: '#FFF7ED',
 };
 
 export function buildPaperTheme(mode: ThemeMode): MD3Theme {
@@ -36,7 +44,7 @@ export function buildPaperTheme(mode: ThemeMode): MD3Theme {
 
   return {
     ...baseTheme,
-    roundness: 20,
+    roundness: 12,
     colors: {
       ...baseTheme.colors,
       primary: baseColors.primary,

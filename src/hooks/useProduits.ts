@@ -5,6 +5,13 @@ import { supabase } from '../api/supabase';
 import { useAuthStore } from '../store/authStore';
 import type { Fournisseur, Produit } from '../types';
 
+// Fonction pour convertir l'URI en ArrayBuffer (meilleur pour React Native)
+async function uriToArrayBuffer(uri: string): Promise<ArrayBuffer> {
+  const response = await fetch(uri);
+  const blob = await response.blob();
+  return await new Response(blob).arrayBuffer();
+}
+
 async function uploadProductImage(organizationId: string) {
   const result = await launchImageLibrary({ mediaType: 'photo', selectionLimit: 1 });
   const asset = result.assets?.[0];
@@ -13,22 +20,27 @@ async function uploadProductImage(organizationId: string) {
     return null;
   }
 
-  const response = await fetch(asset.uri);
-  const blob = await response.blob();
-  const path = `${organizationId}/${Date.now()}-${asset.fileName ?? 'produit.jpg'}`;
+  try {
+    // Convertir en ArrayBuffer au lieu de Blob
+    const arrayBuffer = await uriToArrayBuffer(asset.uri);
+    const path = `${organizationId}/${Date.now()}-${asset.fileName ?? 'produit.jpg'}`;
 
-  const { error } = await supabase.storage.from('produits').upload(path, blob, {
-    upsert: true,
-    contentType: asset.type ?? 'image/jpeg',
-  });
+    const { error } = await supabase.storage.from('produits').upload(path, arrayBuffer, {
+      upsert: true,
+      contentType: asset.type ?? 'image/jpeg',
+    });
 
-  if (error) {
-    Alert.alert('Upload image', error.message);
+    if (error) {
+      Alert.alert('Upload image', error.message);
+      return null;
+    }
+
+    const { data } = supabase.storage.from('produits').getPublicUrl(path);
+    return data.publicUrl;
+  } catch (error: any) {
+    Alert.alert('Upload image', error.message || 'Network request failed');
     return null;
   }
-
-  const { data } = supabase.storage.from('produits').getPublicUrl(path);
-  return data.publicUrl;
 }
 
 export function useProduits() {
