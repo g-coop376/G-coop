@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { Button, Surface, Text, useTheme } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import ScreenContainer from '../../components/common/ScreenContainer';
 import BrandMark from '../../components/common/BrandMark';
 import FormTextField from '../../components/common/FormTextField';
@@ -18,6 +19,7 @@ type FormValues = z.infer<typeof schema>;
 
 function LoginScreen({ navigation }: { navigation: { navigate: (screen: string) => void } }) {
   const theme = useTheme();
+  const { t } = useTranslation();
   const { signIn, loading } = useAuth();
   const { control, handleSubmit } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -40,10 +42,10 @@ function LoginScreen({ navigation }: { navigation: { navigate: (screen: string) 
             <BrandMark compact />
             <View style={styles.headerCopy}>
               <Text variant="headlineMedium" style={{ color: theme.colors.onSurface }}>
-                Welcome back 👋
+                {t('login_title')}
               </Text>
               <Text variant="bodyLarge" style={{ color: theme.colors.onSurfaceVariant }}>
-                Sign in to manage products, stock, and documents with better focus.
+                {t('login_subtitle')}
               </Text>
             </View>
           </View>
@@ -52,17 +54,17 @@ function LoginScreen({ navigation }: { navigation: { navigate: (screen: string) 
             <View style={styles.cardContent}>
               <View style={styles.cardHeader}>
                 <Text variant="titleLarge" style={{ color: theme.colors.onSurface }}>
-                  Login
+                  {t('login_heading')}
                 </Text>
                 <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-                  Use your cooperative account credentials.
+                  {t('login_desc')}
                 </Text>
               </View>
 
               <FormTextField
                 control={control as never}
                 name="email"
-                label="Email"
+                label={t('email')}
                 icon="email-outline"
                 keyboardType="email-address"
                 autoCapitalize="none"
@@ -72,7 +74,7 @@ function LoginScreen({ navigation }: { navigation: { navigate: (screen: string) 
               <FormTextField
                 control={control as never}
                 name="password"
-                label="Password"
+                label={t('password')}
                 icon="lock-outline"
                 secureTextEntry
                 autoCapitalize="none"
@@ -86,10 +88,10 @@ function LoginScreen({ navigation }: { navigation: { navigate: (screen: string) 
                 disabled={loading}
                 onPress={handleSubmit(submitLogin)}
                 loading={loading}>
-                Login
+                {t('login')}
               </Button>
 
-              <Button onPress={() => navigation.navigate('ForgotPassword')}>Forgot password?</Button>
+              <Button onPress={() => navigation.navigate('ForgotPassword')}>{t('forgot_password')}</Button>
             </View>
           </Surface>
         </View>

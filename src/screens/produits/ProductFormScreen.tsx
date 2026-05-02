@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button, Card, Menu } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import ScreenContainer from '../../components/common/ScreenContainer';
 import FormTextField from '../../components/common/FormTextField';
 import { useProduits } from '../../hooks/useProduits';
@@ -26,6 +27,7 @@ function ProductFormScreen({
   route?: { params?: { produit?: Produit } };
   navigation: { goBack: () => void };
 }) {
+  const { t } = useTranslation();
   const produit = route?.params?.produit;
   const { fournisseurs, saveProduit } = useProduits();
   const [menuVisible, setMenuVisible] = React.useState(false);
@@ -45,21 +47,21 @@ function ProductFormScreen({
   });
 
   return (
-    <ScreenContainer title={produit ? 'Modifier produit' : 'Nouveau produit'}>
+    <ScreenContainer title={produit ? t('edit_product') : t('new_product')}>
       <Card>
         <Card.Content style={{ gap: 12 }}>
-          <FormTextField control={control as never} name="nom" label="Nom" />
-          <FormTextField control={control as never} name="description" label="Description" multiline />
-          <FormTextField control={control as never} name="prix_unitaire" label="Prix unitaire" keyboardType="numeric" />
-          <FormTextField control={control as never} name="quantite_stock" label="Quantité stock" keyboardType="numeric" />
-          <FormTextField control={control as never} name="seuil_minimum" label="Seuil minimum" keyboardType="numeric" />
-          <FormTextField control={control as never} name="unite" label="Unité" />
+          <FormTextField control={control as never} name="nom" label={t('name')} />
+          <FormTextField control={control as never} name="description" label={t('description')} multiline />
+          <FormTextField control={control as never} name="prix_unitaire" label={t('price')} keyboardType="numeric" />
+          <FormTextField control={control as never} name="quantite_stock" label={t('quantity_stock')} keyboardType="numeric" />
+          <FormTextField control={control as never} name="seuil_minimum" label={t('min_threshold')} keyboardType="numeric" />
+          <FormTextField control={control as never} name="unite" label={t('unit')} />
           <Menu
             visible={menuVisible}
             onDismiss={() => setMenuVisible(false)}
             anchor={
               <Button mode="outlined" onPress={() => setMenuVisible(true)}>
-                {fournisseurs.find(item => item.id === fournisseurId)?.nom ?? 'Choisir un fournisseur'}
+                {fournisseurs.find(item => item.id === fournisseurId)?.nom ?? t('choose_supplier')}
               </Button>
             }>
             {fournisseurs.map(item => (
@@ -92,7 +94,7 @@ function ProductFormScreen({
                 navigation.goBack();
               }
             })}>
-            Enregistrer et choisir une photo
+            {t('save_and_choose_photo')}
           </Button>
         </Card.Content>
       </Card>

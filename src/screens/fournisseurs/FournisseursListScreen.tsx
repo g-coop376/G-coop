@@ -1,6 +1,7 @@
 import React from 'react';
 import { FlatList } from 'react-native';
 import { FAB, Searchbar } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import ScreenContainer from '../../components/common/ScreenContainer';
 import EntityListItem from '../../components/common/EntityListItem';
 import { supabase } from '../../api/supabase';
@@ -12,6 +13,7 @@ function FournisseursListScreen({
 }: {
   navigation: { navigate: (screen: string, params?: { fournisseur?: Fournisseur }) => void };
 }) {
+  const { t } = useTranslation();
   const organization = useAuthStore(state => state.organization);
   const [fournisseurs, setFournisseurs] = React.useState<Fournisseur[]>([]);
   const [search, setSearch] = React.useState('');
@@ -45,8 +47,8 @@ function FournisseursListScreen({
   };
 
   return (
-    <ScreenContainer title="Fournisseurs">
-      <Searchbar placeholder="Rechercher" value={search} onChangeText={setSearch} />
+    <ScreenContainer title={t('suppliers_title')}>
+      <Searchbar placeholder={t('search_supplier')} value={search} onChangeText={setSearch} />
       <FlatList
         data={fournisseurs}
         scrollEnabled={false}

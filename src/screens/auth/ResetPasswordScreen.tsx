@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Alert } from 'react-native';
 import { ActivityIndicator, Button, Card, Text } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import FormTextField from '../../components/common/FormTextField';
 import ScreenContainer from '../../components/common/ScreenContainer';
 import { useAuth } from '../../hooks/useAuth';
@@ -19,6 +20,7 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 function ResetPasswordScreen() {
+  const { t } = useTranslation();
   const { updatePassword, session, processingDeepLink, deepLinkError } = useAuth();
   const [submitting, setSubmitting] = React.useState(false);
   const { control, handleSubmit } = useForm<FormValues>({
@@ -28,11 +30,11 @@ function ResetPasswordScreen() {
 
   if (processingDeepLink) {
     return (
-      <ScreenContainer title="Nouveau mot de passe" scrollable={false}>
+      <ScreenContainer title={t('new_password_title')} scrollable={false}>
         <Card>
           <Card.Content style={{ gap: 12, alignItems: 'center' }}>
             <ActivityIndicator />
-            <Text>Validation du lien en cours...</Text>
+            <Text>{t('validating_link')}</Text>
           </Card.Content>
         </Card>
       </ScreenContainer>
@@ -40,15 +42,15 @@ function ResetPasswordScreen() {
   }
 
   return (
-    <ScreenContainer title="Nouveau mot de passe" scrollable={false}>
+    <ScreenContainer title={t('new_password_title')} scrollable={false}>
       <Card>
         <Card.Content style={{ gap: 12 }}>
           {deepLinkError ? <Text style={{ color: '#b3261e' }}>{deepLinkError}</Text> : null}
           {!deepLinkError && !session ? (
-            <Text>Ouvrez ce lien depuis votre email pour definir un nouveau mot de passe.</Text>
+            <Text>{t('open_link_from_email')}</Text>
           ) : null}
-          <FormTextField control={control as never} name="password" label="Mot de passe" secureTextEntry />
-          <FormTextField control={control as never} name="confirmPassword" label="Confirmer" secureTextEntry />
+          <FormTextField control={control as never} name="password" label={t('password_label')} secureTextEntry />
+          <FormTextField control={control as never} name="confirmPassword" label={t('confirm_password')} secureTextEntry />
           <Button
             mode="contained"
             disabled={!session || Boolean(deepLinkError) || submitting}
@@ -58,10 +60,10 @@ function ResetPasswordScreen() {
               const ok = await updatePassword(values.password);
               setSubmitting(false);
               if (ok) {
-                Alert.alert('Mot de passe modifié');
+                Alert.alert(t('password_updated'));
               }
             })}>
-            Mettre à jour
+            {t('update')}
           </Button>
         </Card.Content>
       </Card>

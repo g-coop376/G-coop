@@ -1,8 +1,11 @@
 import React from 'react';
 import { Platform, StyleSheet, Text as RNText, View } from 'react-native';
 import { Button, Chip, Surface, Text, useTheme } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import ScreenContainer from '../../components/common/ScreenContainer';
 import BrandMark from '../../components/common/BrandMark';
+import { useLanguage } from '../../hooks/useLanguage';
+import type { LanguageCode } from '../../utils/i18n';
 
 const emojiStyle = Platform.select({
   android: { fontFamily: undefined },
@@ -17,6 +20,12 @@ function EmojiText({ children, style }: { children: string; style?: object }) {
 
 function WelcomeScreen({ navigation }: { navigation: { navigate: (screen: string) => void } }) {
   const theme = useTheme();
+  const { t } = useTranslation();
+  const { language, switchLanguage } = useLanguage();
+  const languages: Record<string, { label: string }> = {
+    ar: { label: 'العربية' },
+    fr: { label: 'Français' },
+  };
 
   return (
     <ScreenContainer scrollable={false} backgroundColor={theme.colors.background}>
@@ -29,42 +38,56 @@ function WelcomeScreen({ navigation }: { navigation: { navigate: (screen: string
             <BrandMark />
             <View style={styles.copy}>
               <Text variant="headlineLarge" style={{ color: theme.colors.onSurface }}>
-                Welcome to a cleaner cooperative workflow
+                {t('welcome_title')}
               </Text>
               <Text variant="bodyLarge" style={{ color: theme.colors.onSurfaceVariant }}>
-                Discover Moroccan products, organize your stock, and keep documents under control from one calm place.
+                {t('welcome_subtitle')}
               </Text>
             </View>
 
             <View style={styles.chips}>
               <Chip compact icon="leaf-circle-outline">
-                <EmojiText>🌿</EmojiText> Local
+                <EmojiText>🌿</EmojiText> {t('welcome_chip_local')}
               </Chip>
               <Chip compact icon="package-variant-closed">
-                <EmojiText>📦</EmojiText> Organized
+                <EmojiText>📦</EmojiText> {t('welcome_chip_organized')}
               </Chip>
               <Chip compact icon="file-document-outline">
-                <EmojiText>🧾</EmojiText> Ready
+                <EmojiText>🧾</EmojiText> {t('welcome_chip_ready')}
               </Chip>
             </View>
 
             <View style={[styles.emojiPanel, { backgroundColor: theme.colors.elevation.level1 }]}>
               <EmojiText style={{ color: theme.colors.onSurface, fontSize: 20 }}>
-                🇲🇦 🫒 🍯 🌾 📈
+                {t('welcome_emoji_morocco')}
               </EmojiText>
               <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-                Clean records, smooth follow-up, and a modern first step for your team.
+                {t('welcome_emoji_panel')}
               </Text>
             </View>
           </Surface>
         </View>
 
+        <View style={styles.languageRow}>
+          {Object.entries(languages).map(([code, { label }]) => (
+            <Chip
+              key={code}
+              compact
+              selected={language === code}
+              onPress={() => switchLanguage(code as LanguageCode)}
+              style={language === code ? { backgroundColor: theme.colors.primaryContainer } : {}}
+            >
+              {label}
+            </Chip>
+          ))}
+        </View>
+
         <View style={styles.footer}>
           <Button mode="contained" contentStyle={styles.primaryButton} onPress={() => navigation.navigate('Login')}>
-            Get Started
+            {t('get_started')}
           </Button>
           <Button textColor={theme.colors.onSurfaceVariant} onPress={() => navigation.navigate('Login')}>
-            Already have an account?
+            {t('already_have_account')}
           </Button>
         </View>
       </View>
@@ -116,6 +139,11 @@ const styles = StyleSheet.create({
   emojiPanel: {
     borderRadius: 24,
     padding: 18,
+    gap: 10,
+  },
+  languageRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
     gap: 10,
   },
   footer: {

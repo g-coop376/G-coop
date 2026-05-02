@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Text, TextInput } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useTranslation } from 'react-i18next';
 import DocumentLineEditor, { type EditableDocumentLine } from '../../components/documents/DocumentLineEditor';
 import { useDocuments } from '../../hooks/useDocuments';
 import type { Client, DocumentType, DocumentWithRelations } from '../../types';
@@ -39,12 +40,13 @@ function ClientPickerModal({
   onSelect: (id: string) => void;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose} />
       <View style={styles.sheet}>
         <View style={styles.sheetHandle} />
-        <Text style={styles.sheetTitle}>Sélectionner un client</Text>
+        <Text style={styles.sheetTitle}>{t('select_client')}</Text>
         <FlatList
           data={clients}
           keyExtractor={c => c.id}
@@ -79,6 +81,7 @@ function DocumentFormScreen({
   route?: { params?: { document?: DocumentWithRelations; type?: DocumentType } };
   navigation: { goBack: () => void; setOptions: (opts: object) => void };
 }) {
+  const { t } = useTranslation();
   const document = route?.params?.document;
   const initialType = route?.params?.type ?? document?.type ?? 'devis';
   const { clients, produits, saveDocument, exportAndShare } = useDocuments();
@@ -92,7 +95,7 @@ function DocumentFormScreen({
   const [lines, setLines] = React.useState<EditableDocumentLine[]>(
     document?.lignes?.map(line => ({
       produit_id: line.produit_id,
-      ref: line.ref,
+      ref: line.ref ?? '',
       designation: line.designation,
       quantite: line.quantite,
       prix_unitaire_ht: line.prix_unitaire_ht,
@@ -110,11 +113,11 @@ function DocumentFormScreen({
 
   const handleSave = async (andShare = false) => {
     if (!clientId) {
-      Alert.alert('Attention', 'Veuillez sélectionner un client');
+      Alert.alert(t('modify_document'), t('select_client'));
       return;
     }
     if (lines.every(l => !l.designation && l.prix_unitaire_ht === 0)) {
-      Alert.alert('Attention', 'Ajoutez au moins une ligne');
+      Alert.alert(t('modify_document'), t('add_line'));
       return;
     }
     setSaving(true);
@@ -144,14 +147,14 @@ function DocumentFormScreen({
           <MaterialCommunityIcons name="arrow-left" size={24} color={COLORS.white} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
-          {document ? 'Modifier' : 'Nouveau'} {config.label}
+          {document ? t('modify_document') : t('new_invoice')} {config.label}
         </Text>
         <View style={{ width: 40 }} />
       </View>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Type de document</Text>
+          <Text style={styles.sectionLabel}>{t('document_type')}</Text>
           <View style={styles.typeRow}>
             {DOC_TYPES.map(dt => {
               const dc = DOC_TYPE_CONFIG[dt];
@@ -179,7 +182,7 @@ function DocumentFormScreen({
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Date</Text>
+          <Text style={styles.sectionLabel}>{t('date')}</Text>
           <View style={styles.inputWrap}>
             <View style={{ marginRight: 12 }}>
               <MaterialCommunityIcons name="calendar" size={20} color={config.color} />
@@ -197,7 +200,7 @@ function DocumentFormScreen({
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Client</Text>
+          <Text style={styles.sectionLabel}>{t('client')}</Text>
           <TouchableOpacity style={styles.selectBox} onPress={() => setClientModal(true)}>
             {selectedClient ? (
               <View style={styles.selectRow}>
@@ -213,7 +216,7 @@ function DocumentFormScreen({
             ) : (
               <View style={styles.selectRow}>
                 <MaterialCommunityIcons name="account-plus-outline" size={22} color={config.color} />
-                <Text style={styles.selectPlaceholder}>Sélectionner un client</Text>
+                <Text style={styles.selectPlaceholder}>{t('select_client')}</Text>
                 <MaterialCommunityIcons name="chevron-down" size={20} color={COLORS.gray} />
               </View>
             )}
@@ -223,7 +226,7 @@ function DocumentFormScreen({
         {type === 'bon_livraison' && (
           <>
             <View style={styles.section}>
-              <Text style={styles.sectionLabel}>Lieu de livraison</Text>
+              <Text style={styles.sectionLabel}>{t('delivery_location')}</Text>
               <View style={styles.inputWrap}>
                 <View style={{ marginRight: 12 }}>
                   <MaterialCommunityIcons name="map-marker" size={20} color={config.color} />
@@ -235,13 +238,13 @@ function DocumentFormScreen({
                   activeUnderlineColor="transparent"
                   value={lieuLivraison}
                   onChangeText={setLieuLivraison}
-                  placeholder="Adresse de livraison"
+                  placeholder={t('delivery_location')}
                 />
               </View>
             </View>
 
             <View style={styles.section}>
-              <Text style={styles.sectionLabel}>Numéro de commande</Text>
+              <Text style={styles.sectionLabel}>{t('order_number')}</Text>
               <View style={styles.inputWrap}>
                 <View style={{ marginRight: 12 }}>
                   <MaterialCommunityIcons name="format-list-numbered" size={20} color={config.color} />
@@ -253,7 +256,7 @@ function DocumentFormScreen({
                   activeUnderlineColor="transparent"
                   value={numeroCommande}
                   onChangeText={setNumeroCommande}
-                  placeholder="N° commande client"
+                  placeholder={t('order_number')}
                 />
               </View>
             </View>
@@ -266,26 +269,26 @@ function DocumentFormScreen({
 
         <View style={styles.summaryBox}>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Montant HT</Text>
+            <Text style={styles.summaryLabel}>{t('amount_ht')}</Text>
             <Text style={styles.summaryVal}>{subtotal.toFixed(2)} DH</Text>
           </View>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>TVA (20%)</Text>
+            <Text style={styles.summaryLabel}>{t('tva_20')}</Text>
             <Text style={styles.summaryVal}>{tvaAmount.toFixed(2)} DH</Text>
           </View>
           <View style={[styles.summaryRow, styles.summaryTotal]}>
-            <Text style={styles.totalLabel}>Montant TTC</Text>
+            <Text style={styles.totalLabel}>{t('amount_ttc')}</Text>
             <Text style={[styles.totalVal, { color: config.color }]}>{totalTTC.toFixed(2)} DH</Text>
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Notes</Text>
+          <Text style={styles.sectionLabel}>{t('notes')}</Text>
           <TextInput
             mode="outlined"
             value={notes}
             onChangeText={setNotes}
-            placeholder="Notes supplémentaires..."
+            placeholder={t('additional_notes')}
             multiline
             numberOfLines={3}
             outlineStyle={{ borderColor: COLORS.border, borderRadius: 12 }}
@@ -299,7 +302,7 @@ function DocumentFormScreen({
             disabled={saving}
           >
             <MaterialCommunityIcons name="file-pdf-box" size={20} color={COLORS.danger} />
-            <Text style={[styles.btnTxt, { color: COLORS.danger }]}>Sauvegarder & Imprimer</Text>
+            <Text style={[styles.btnTxt, { color: COLORS.danger }]}>{t('save_and_print')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.btn, styles.btnPrimary, { backgroundColor: config.color }, saving && { opacity: 0.6 }]}
@@ -307,7 +310,7 @@ function DocumentFormScreen({
             disabled={saving}
           >
             <MaterialCommunityIcons name="content-save-outline" size={20} color="#FFF" />
-            <Text style={[styles.btnTxt, { color: '#FFF' }]}>Sauvegarder</Text>
+            <Text style={[styles.btnTxt, { color: '#FFF' }]}>{t('save_document')}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { FlatList } from 'react-native';
 import { FAB, Searchbar } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import ScreenContainer from '../../components/common/ScreenContainer';
 import ProductCard from '../../components/products/ProductCard';
 import { useProduits } from '../../hooks/useProduits';
@@ -11,11 +12,12 @@ function ProductsListScreen({
 }: {
   navigation: { navigate: (screen: string, params?: { produit?: Produit }) => void };
 }) {
+  const { t } = useTranslation();
   const { produits, loading, search, setSearch, removeProduit } = useProduits();
 
   return (
-    <ScreenContainer title="Produits" loading={loading}>
-      <Searchbar placeholder="Rechercher un produit" value={search} onChangeText={setSearch} />
+    <ScreenContainer title={t('products')} loading={loading}>
+      <Searchbar placeholder={t('search_product')} value={search} onChangeText={setSearch} />
       <FlatList
         data={produits}
         scrollEnabled={false}

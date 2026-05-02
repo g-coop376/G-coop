@@ -1,6 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from 'react-native-paper';
 import ClientsListScreen from '../screens/clients/ClientsListScreen';
 import DashboardScreen from '../screens/dashboard/DashboardScreen';
@@ -17,6 +18,7 @@ function icon(name: string) {
 }
 
 function MainNavigator() {
+  const { t } = useTranslation();
   const theme = useTheme();
 
   return (
@@ -40,27 +42,27 @@ function MainNavigator() {
       <Tab.Screen
         name="DashboardTab"
         component={DashboardScreen}
-        options={{ title: 'Tableau de bord', tabBarIcon: icon('view-dashboard-outline') }}
+        options={{ title: t('dashboard_title'), tabBarIcon: icon('view-dashboard-outline') }}
       />
       <Tab.Screen
         name="ClientsTab"
         component={ClientsListScreen}
-        options={{ title: 'Clients', tabBarIcon: icon('account-group-outline') }}
+        options={{ title: t('clients'), tabBarIcon: icon('account-group-outline') }}
       />
       <Tab.Screen
         name="ProduitsTab"
         component={ProductsListScreen}
-        options={{ title: 'Produits', tabBarIcon: icon('package-variant-closed') }}
+        options={{ title: t('products'), tabBarIcon: icon('package-variant-closed') }}
       />
       <Tab.Screen
         name="DocumentsTab"
         component={DocumentsListScreen}
-        options={{ title: 'Documents', tabBarIcon: icon('file-document-outline') }}
+        options={{ title: t('documents'), tabBarIcon: icon('file-document-outline') }}
       />
       <Tab.Screen
         name="MoreTab"
         component={MoreScreen}
-        options={{ title: 'Plus', tabBarIcon: icon('dots-horizontal-circle-outline') }}
+        options={{ title: t('more_title'), tabBarIcon: icon('dots-horizontal-circle-outline') }}
       />
     </Tab.Navigator>
   );

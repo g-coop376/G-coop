@@ -1,7 +1,9 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import AppSplash from '../../components/common/AppSplash';
 
 function SplashScreen({ navigation }: { navigation: { replace: (screen: string) => void } }) {
+  const { t } = useTranslation();
   React.useEffect(() => {
     const timer = setTimeout(() => {
       navigation.replace('Welcome');
@@ -13,8 +15,8 @@ function SplashScreen({ navigation }: { navigation: { replace: (screen: string) 
   return (
     <AppSplash
       title="G-COOP"
-      tagline="Discover Moroccan products and run your cooperative with confidence."
-      caption="A calmer way to manage stock, documents, and daily trade."
+      tagline={t('welcome_subtitle')}
+      caption={t('app_tagline')}
       showLoader
     />
   );

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Dimensions, StyleSheet, View } from 'react-native';
 import { Button, Card, Text } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { LineChart } from 'react-native-chart-kit';
 import ScreenContainer from '../../components/common/ScreenContainer';
 import StatCard from '../../components/common/StatCard';
@@ -17,6 +18,7 @@ function monthLabel(offset: number) {
 }
 
 function DashboardScreen({ navigation }: { navigation: { navigate: (screen: string) => void } }) {
+  const { t } = useTranslation();
   const { documents } = useDocuments();
   const { produits } = useProduits();
   const { profile, sendInvitation } = useAuth();
@@ -43,15 +45,15 @@ function DashboardScreen({ navigation }: { navigation: { navigate: (screen: stri
 
   if (profile?.role === 'super_admin') {
     return (
-      <ScreenContainer title="Administration G-COOP">
+      <ScreenContainer title={t('admin_dashboard')}>
         <Card>
           <Card.Content style={{ gap: 12 }}>
-            <Text variant="titleMedium">Inviter un responsable</Text>
+            <Text variant="titleMedium">{t('invite_manager')}</Text>
             <Button mode="outlined" onPress={() => setInviteType(inviteType === 'cooperative' ? 'societe' : 'cooperative')}>
-              Type: {inviteType}
+              {t('type')}: {t(inviteType === 'cooperative' ? 'cooperative' : 'company')}
             </Button>
             <Button mode="contained" onPress={() => sendInvitation(inviteEmail, inviteType)}>
-              Envoyer l'invitation à {inviteEmail}
+              {t('send_invitation_to', { email: inviteEmail })}
             </Button>
           </Card.Content>
         </Card>
@@ -60,17 +62,17 @@ function DashboardScreen({ navigation }: { navigation: { navigate: (screen: stri
   }
 
   return (
-    <ScreenContainer title="Tableau de bord">
+    <ScreenContainer title={t('dashboard_title')}>
       <View style={styles.grid}>
-        <StatCard label="Factures du mois" value={String(factures.length)} />
-        <StatCard label="CA du mois" value={`${ventes.toFixed(2)} MAD`} />
-        <StatCard label="Produits en stock" value={String(produits.length)} />
-        <StatCard label="Alertes stock" value={String(lowStock.length)} helper="Stock sous seuil minimum" />
+        <StatCard label={t('factures_month')} value={String(factures.length)} />
+        <StatCard label={t('ca_month')} value={`${ventes.toFixed(2)} MAD`} />
+        <StatCard label={t('produits_stock')} value={String(produits.length)} />
+        <StatCard label={t('stock_alerts')} value={String(lowStock.length)} helper={t('stock_min_alert')} />
       </View>
 
       <Card>
         <Card.Content>
-          <Text variant="titleMedium">Ventes vs achats (6 mois)</Text>
+          <Text variant="titleMedium">{t('sales_vs_purchases')}</Text>
           <LineChart
             width={Dimensions.get('window').width - 48}
             height={240}
@@ -80,7 +82,7 @@ function DashboardScreen({ navigation }: { navigation: { navigate: (screen: stri
                 { data: lastSixMonths.map(item => item.ventes), color: () => '#0E7C66' },
                 { data: lastSixMonths.map(item => item.achats), color: () => '#D97706' },
               ],
-              legend: ['Ventes', 'Achats'],
+              legend: [t('sales'), t('purchases')],
             }}
             chartConfig={{
               backgroundColor: '#FFF9F1',
@@ -98,22 +100,22 @@ function DashboardScreen({ navigation }: { navigation: { navigate: (screen: stri
 
       <Card>
         <Card.Content style={{ gap: 8 }}>
-          <Text variant="titleMedium">Actions rapides</Text>
+          <Text variant="titleMedium">{t('quick_actions')}</Text>
           <Button mode="contained-tonal" onPress={() => navigation.navigate('DocumentForm')}>
-            Nouveau document
+            {t('new_document')}
           </Button>
           <Button mode="contained-tonal" onPress={() => navigation.navigate('Stock')}>
-            Voir le stock
+            {t('view_stock')}
           </Button>
           <Button mode="contained-tonal" onPress={() => navigation.navigate('Fournisseurs')}>
-            Gérer les fournisseurs
+            {t('manage_suppliers')}
           </Button>
         </Card.Content>
       </Card>
 
       <Card>
         <Card.Content style={{ gap: 8 }}>
-          <Text variant="titleMedium">Derniers documents</Text>
+          <Text variant="titleMedium">{t('recent_documents')}</Text>
           {documents.slice(0, 5).map(doc => (
             <Text key={doc.id}>
               {documentLabels[doc.type]} {doc.numero} • {doc.total_ttc.toFixed(2)} MAD

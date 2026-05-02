@@ -1,5 +1,6 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from 'react-native-paper';
 import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 import LoginScreen from '../screens/auth/LoginScreen';
@@ -16,6 +17,7 @@ function AuthNavigator({
 }: {
   initialRouteName?: Exclude<PendingAuthScreen, null> | 'Login' | 'Welcome' | 'Splash';
 }) {
+  const { t } = useTranslation();
   const theme = useTheme();
 
   return (
@@ -29,21 +31,21 @@ function AuthNavigator({
       }}>
       <Stack.Screen name="Splash" component={SplashScreen} options={{ headerShown: false }} />
       <Stack.Screen name="Welcome" component={WelcomeScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="Login" component={LoginScreen} options={{ title: 'Connexion' }} />
+      <Stack.Screen name="Login" component={LoginScreen} options={{ title: t('login') }} />
       <Stack.Screen
         name="ForgotPassword"
         component={ForgotPasswordScreen}
-        options={{ title: 'Mot de passe oublié' }}
+        options={{ title: t('forgot_password_title') }}
       />
       <Stack.Screen
         name="ResetPassword"
         component={ResetPasswordScreen}
-        options={{ title: 'Réinitialisation' }}
+        options={{ title: t('new_password_title') }}
       />
       <Stack.Screen
         name="SetPassword"
         component={SetPasswordScreen}
-        options={{ title: 'Définir le mot de passe' }}
+        options={{ title: t('new_password_title') }}
       />
     </Stack.Navigator>
   );

@@ -2,20 +2,22 @@ import React from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
 import { Button, Divider, SegmentedButtons, Text, useTheme } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useTranslation } from 'react-i18next';
 import ScreenContainer from '../../components/common/ScreenContainer';
 import SectionCard from '../../components/admin/SectionCard';
 import { useAuth } from '../../hooks/useAuth';
 import { useThemeMode } from '../../theme/ThemeModeContext';
 
 function AdminProfileScreen() {
+  const { t } = useTranslation();
   const theme = useTheme();
   const { profile, user, signOut } = useAuth();
   const { mode, preference, setPreference } = useThemeMode();
 
   const handleLogout = () => {
-    Alert.alert('Logout', 'Do you want to sign out of the admin workspace?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Logout', style: 'destructive', onPress: () => signOut().catch(() => undefined) },
+    Alert.alert(t('logout_confirm'), t('logout_action'), [
+      { text: t('cancel'), style: 'cancel' },
+      { text: t('logout'), style: 'destructive', onPress: () => signOut().catch(() => undefined) },
     ]);
   };
 
@@ -23,41 +25,41 @@ function AdminProfileScreen() {
     <ScreenContainer backgroundColor={theme.colors.background}>
       <View style={styles.hero}>
         <Text variant="headlineMedium" style={[styles.heroTitle, { color: theme.colors.onSurface }]}>
-          Profile
+          {t('profile')}
         </Text>
         <Text variant="bodyLarge" style={{ color: theme.colors.onSurfaceVariant }}>
-          Manage admin identity, appearance, and session controls.
+          {t('manage_identity')}
         </Text>
       </View>
 
-      <SectionCard title="Admin account" subtitle="Current signed-in identity">
+      <SectionCard title={t('admin_account')} subtitle={t('current_identity')}>
         <View style={styles.profileHeader}>
           <View style={[styles.avatar, { backgroundColor: theme.colors.primary }]}>
             <MaterialCommunityIcons name="shield-account-outline" color="#FFFFFF" size={28} />
           </View>
           <View style={styles.profileCopy}>
             <Text variant="titleLarge" style={{ color: theme.colors.onSurface }}>
-              {profile?.nom_complet ?? 'Super Admin'}
+              {profile?.nom_complet ?? t('super_admin')}
             </Text>
             <Text variant="bodyLarge" style={{ color: theme.colors.onSurfaceVariant }}>
-              {user?.email ?? 'No email available'}
+              {user?.email ?? t('email_invalid')}
             </Text>
           </View>
         </View>
       </SectionCard>
 
-      <SectionCard title="Appearance" subtitle="Choose the admin workspace theme">
+      <SectionCard title={t('appearance')} subtitle={t('choose_theme')}>
         <View style={styles.preferenceRow}>
           <View style={styles.preferenceCopy}>
             <Text variant="titleSmall" style={{ color: theme.colors.onSurface }}>
               {preference === 'system'
-                ? `System mode (${mode === 'dark' ? 'dark' : 'light'})`
+                ? `${t('system_mode')} (${mode === 'dark' ? t('dark_mode') : t('light_mode')})`
                 : mode === 'dark'
-                  ? 'Dark mode'
-                  : 'Light mode'}
+                  ? t('dark_mode')
+                  : t('light_mode')}
             </Text>
             <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-              Auto-detect the device appearance or force a manual light or dark theme.
+              {t('choose_theme')}
             </Text>
           </View>
         </View>
@@ -65,24 +67,24 @@ function AdminProfileScreen() {
           value={preference}
           onValueChange={value => setPreference(value as 'system' | 'light' | 'dark')}
           buttons={[
-            { value: 'system', label: 'System' },
-            { value: 'light', label: 'Light' },
-            { value: 'dark', label: 'Dark' },
+            { value: 'system', label: t('system_mode') },
+            { value: 'light', label: t('light_mode') },
+            { value: 'dark', label: t('dark_mode') },
           ]}
         />
       </SectionCard>
 
-      <SectionCard title="Session" subtitle="Secure access controls">
+      <SectionCard title={t('session')} subtitle={t('secure_access')}>
         <View style={styles.sessionCard}>
           <View style={styles.sessionRow}>
             <MaterialCommunityIcons name="logout" size={20} color={theme.colors.primary} />
             <Text variant="bodyLarge" style={{ color: theme.colors.onSurface }}>
-              End this admin session on the current device.
+              {t('end_session')}
             </Text>
           </View>
           <Divider />
           <Button mode="contained" buttonColor="#C2410C" contentStyle={styles.logoutButton} onPress={handleLogout}>
-            Logout
+            {t('logout')}
           </Button>
         </View>
       </SectionCard>

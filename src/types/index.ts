@@ -1,4 +1,5 @@
 import type { Session, User } from '@supabase/supabase-js';
+import { useTranslation } from 'react-i18next';
 
 export type Role = 'super_admin' | 'mol_org';
 export type OrganizationType = 'cooperative' | 'societe';
@@ -152,10 +153,11 @@ export function getDocTypeConfig(type: DocumentType) {
 }
 
 export function getStatusLabel(statut: DocumentStatus): string {
+  const { t } = useTranslation();
   const labels: Record<DocumentStatus, string> = {
-    brouillon: 'Brouillon',
-    valide: 'Validé',
-    annule: 'Annulé',
+    brouillon: t('status_brouillon'),
+    valide: t('status_valide'),
+    annule: t('status_annule'),
   };
   return labels[statut];
 }

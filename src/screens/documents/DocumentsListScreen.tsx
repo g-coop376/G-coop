@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Text } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useTranslation } from 'react-i18next';
 import { useDocuments } from '../../hooks/useDocuments';
 import type { DocumentType, DocumentWithRelations } from '../../types';
 import { DOC_TYPE_CONFIG, getStatusColor, getStatusLabel } from '../../types';
@@ -89,6 +90,7 @@ function DocumentsListScreen({
     addListener: (event: string, callback: () => void) => () => void;
   };
 }) {
+  const { t } = useTranslation();
   const { documents, loading, fetchDocuments } = useDocuments();
   const [activeTab, setActiveTab] = React.useState<DocumentType>('bon_livraison');
   const [search, setSearch] = React.useState('');
@@ -126,7 +128,7 @@ function DocumentsListScreen({
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
-          <Text style={styles.headerTitle}>Documents</Text>
+          <Text style={styles.headerTitle}>{t('documents')}</Text>
           <TouchableOpacity
             style={[styles.addBtn, { backgroundColor: config.color }]}
             onPress={() => navigation.navigate('DocumentForm', { type: activeTab })}
@@ -141,7 +143,7 @@ function DocumentsListScreen({
           <MaterialCommunityIcons name="magnify" size={18} color={COLORS.gray} />
           <TextInput
             style={styles.searchInput}
-            placeholder={`Chercher un ${config.label.toLowerCase()}...`}
+            placeholder={t('search_document')}
             placeholderTextColor={COLORS.gray}
             value={search}
             onChangeText={setSearch}
@@ -195,9 +197,9 @@ function DocumentsListScreen({
           <View style={[styles.emptyIconWrap, { backgroundColor: config.color + '12' }]}>
             <MaterialCommunityIcons name={config.icon} size={48} color={config.color + '80'} />
           </View>
-          <Text style={styles.emptyTitle}>Aucun document</Text>
+          <Text style={styles.emptyTitle}>{t('no_document')}</Text>
           <Text style={styles.emptySubtitle}>
-            Appuyez sur + pour créer un {config.label.toLowerCase()}
+            {t('tap_to_create')} {config.label.toLowerCase()}
           </Text>
         </View>
       ) : (

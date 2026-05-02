@@ -1,6 +1,7 @@
 import React from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Text, useTheme } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import BrandMark from './BrandMark';
 
 interface AppSplashProps {
@@ -11,6 +12,7 @@ interface AppSplashProps {
 }
 
 function AppSplash({ title, tagline, caption, showLoader = false }: AppSplashProps) {
+  const { t } = useTranslation();
   const theme = useTheme();
   const fade = React.useRef(new Animated.Value(0)).current;
   const rise = React.useRef(new Animated.Value(18)).current;
@@ -75,7 +77,7 @@ function AppSplash({ title, tagline, caption, showLoader = false }: AppSplashPro
           <View style={styles.loaderRow}>
             <ActivityIndicator size="small" color={theme.colors.primary} />
             <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-              Preparing your workspace...
+              {t('preparing_workspace')}
             </Text>
           </View>
         ) : null}

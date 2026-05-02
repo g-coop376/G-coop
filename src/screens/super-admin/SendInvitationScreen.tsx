@@ -8,6 +8,7 @@ import {
   TextInput,
   useTheme,
 } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import ScreenContainer from '../../components/common/ScreenContainer';
 import SectionCard from '../../components/admin/SectionCard';
 import InvitationStatusBadge from '../../components/admin/InvitationStatusBadge';
@@ -36,6 +37,7 @@ function formatDate(value: string) {
 }
 
 function SendInvitationScreen() {
+  const { t } = useTranslation();
   const theme = useTheme();
   const { sendInvitation } = useAuth();
   const [organizationName, setOrganizationName] = React.useState('');
@@ -58,7 +60,7 @@ function SendInvitationScreen() {
       .limit(20);
 
     if (error) {
-      Alert.alert('Invitations', error.message);
+      Alert.alert(t('invitations'), error.message);
       setLoading(false);
       setRefreshing(false);
       return;
@@ -80,12 +82,12 @@ function SendInvitationScreen() {
     const normalizedEmail = email.trim().toLowerCase();
 
     if (trimmedName.length < 2) {
-      Alert.alert('Invitation', "Organization name is required.");
+      Alert.alert(t('invitations'), t('required_field'));
       return;
     }
 
     if (!isValidEmail(normalizedEmail)) {
-      Alert.alert('Invitation', 'Please enter a valid email address.');
+      Alert.alert(t('invitations'), t('email_invalid'));
       return;
     }
 
@@ -99,7 +101,7 @@ function SendInvitationScreen() {
 
     setOrganizationName('');
     setEmail('');
-    Alert.alert('Invitation', `Invitation sent to ${normalizedEmail}`);
+    Alert.alert(t('invitations'), t('invitation_sent_to', { email: normalizedEmail }));
     await loadInvitations(false);
   };
 
@@ -119,27 +121,27 @@ function SendInvitationScreen() {
       }>
       <View style={styles.hero}>
         <Text variant="headlineMedium" style={[styles.heroTitle, { color: theme.colors.onSurface }]}>
-          Invitations
+          {t('invitations')}
         </Text>
         <Text variant="bodyLarge" style={{ color: theme.colors.onSurfaceVariant }}>
-          Invite new organizations and monitor recent invitation activity from one place.
+          {t('clean_workflow')}
         </Text>
       </View>
 
       <SectionCard
-        title="Send invitation"
-        subtitle="Create a new admin onboarding invite">
+        title={t('send_invitation')}
+        subtitle={t('invite_manager')}>
         <View style={styles.form}>
           <TextInput
             mode="outlined"
-            label="Organization name"
+            label={t('organization_name')}
             value={organizationName}
             onChangeText={setOrganizationName}
           />
 
           <TextInput
             mode="outlined"
-            label="Admin email"
+            label={t('admin_email')}
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
@@ -148,14 +150,14 @@ function SendInvitationScreen() {
 
           <View style={styles.fieldGroup}>
             <Text variant="labelLarge" style={{ color: theme.colors.onSurface }}>
-              Organization type
+              {t('organization_type')}
             </Text>
             <SegmentedButtons
               value={organizationType}
               onValueChange={value => setOrganizationType(value as OrganizationType)}
               buttons={[
-                { label: 'Cooperative', value: 'cooperative' },
-                { label: 'Company', value: 'societe' },
+                { label: t('cooperative'), value: 'cooperative' },
+                { label: t('company'), value: 'societe' },
               ]}
             />
           </View>
@@ -166,14 +168,14 @@ function SendInvitationScreen() {
             loading={submitting}
             disabled={submitting}
             onPress={handleSubmit}>
-            Send invitation
+            {t('send_invitation')}
           </Button>
         </View>
       </SectionCard>
 
       <SectionCard
-        title="Sent invitations"
-        subtitle="Latest 20 invitations">
+        title={t('sent_invitations')}
+        subtitle={t('latest_20_invitations')}>
         <View style={styles.list}>
           {invitations.length === 0 ? (
             <View
@@ -182,10 +184,10 @@ function SendInvitationScreen() {
                 { backgroundColor: theme.colors.surfaceVariant },
               ]}>
               <Text variant="bodyLarge" style={{ color: theme.colors.onSurface }}>
-                No invitations sent yet.
+                {t('no_invitations_yet')}
               </Text>
               <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-                New invitations will appear here with their current status.
+                {t('new_invitations_appear_here')}
               </Text>
             </View>
           ) : (
@@ -205,7 +207,7 @@ function SendInvitationScreen() {
                       {invitation.email}
                     </Text>
                     <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-                      {invitation.org_type === 'cooperative' ? 'Cooperative' : 'Company'} • Sent {formatDate(invitation.created_at)}
+                      {invitation.org_type === 'cooperative' ? t('cooperative') : t('company')} • {t('type')}: {t('sent_invitations')} {formatDate(invitation.created_at)}
                     </Text>
                   </View>
                   <InvitationStatusBadge status={invitation.statut} />

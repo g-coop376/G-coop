@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button, Card, SegmentedButtons, Text } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import FormTextField from '../../components/common/FormTextField';
 import ScreenContainer from '../../components/common/ScreenContainer';
 import { supabase } from '../../api/supabase';
@@ -43,6 +44,7 @@ async function uploadLogo(organizationId: string) {
 }
 
 function OnboardingScreen() {
+  const { t } = useTranslation();
   const { profile, completeOnboarding } = useAuth();
   const [logoUrl, setLogoUrl] = React.useState<string | null>(null);
   const [orgType, setOrgType] = React.useState<'cooperative' | 'societe'>('cooperative');
@@ -68,28 +70,28 @@ function OnboardingScreen() {
   const tva = watch('tva');
 
   return (
-    <ScreenContainer title="Onboarding">
+    <ScreenContainer title={t('onboarding_title')}>
       <Card>
         <Card.Content style={{ gap: 12 }}>
-          <Text variant="titleMedium">Informations de l'organisation</Text>
+          <Text variant="titleMedium">{t('org_info')}</Text>
           <SegmentedButtons
             value={orgType}
             onValueChange={value => setOrgType(value as 'cooperative' | 'societe')}
             buttons={[
-              { label: 'Coopérative', value: 'cooperative' },
-              { label: 'Société', value: 'societe' },
+              { label: t('cooperative'), value: 'cooperative' },
+              { label: t('company'), value: 'societe' },
             ]}
           />
-          <FormTextField control={control as never} name="nom" label="Nom" />
-          <FormTextField control={control as never} name="adresse" label="Adresse" multiline />
-          <FormTextField control={control as never} name="telephone" label="Téléphone" keyboardType="phone-pad" />
-          <FormTextField control={control as never} name="email" label="Email" keyboardType="email-address" />
+          <FormTextField control={control as never} name="nom" label={t('name')} />
+          <FormTextField control={control as never} name="adresse" label={t('address')} multiline />
+          <FormTextField control={control as never} name="telephone" label={t('phone')} keyboardType="phone-pad" />
+          <FormTextField control={control as never} name="email" label={t('email')} keyboardType="email-address" />
           <FormTextField control={control as never} name="ice" label="ICE" />
           <FormTextField control={control as never} name="rc" label="RC" />
           {orgType === 'societe' ? (
             <FormTextField control={control as never} name="tva" label="TVA (%)" keyboardType="numeric" />
           ) : (
-            <Text>TVA appliquée: {tva}%</Text>
+            <Text>{t('tva_applied')}: {tva}%</Text>
           )}
           <Button
             mode="outlined"
@@ -99,7 +101,7 @@ function OnboardingScreen() {
                 setLogoUrl(uploaded);
               }
             }}>
-            {logoUrl ? 'Logo sélectionné' : 'Ajouter le logo'}
+            {logoUrl ? t('logo_selected') : t('add_logo')}
           </Button>
           <Button
             mode="contained"
@@ -110,10 +112,10 @@ function OnboardingScreen() {
                 tva: orgType === 'cooperative' ? 0 : Number(values.tva) || 0,
               });
               if (ok) {
-                Alert.alert('Organisation créée');
+                Alert.alert(t('org_created'));
               }
             })}>
-            Finaliser
+            {t('finalize')}
           </Button>
         </Card.Content>
       </Card>

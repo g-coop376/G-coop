@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Button, Menu, Text, TextInput } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useTranslation } from 'react-i18next';
 import type { Produit } from '../../types';
 
 export interface EditableDocumentLine {
@@ -31,6 +32,7 @@ function LineItem({
   onUpdate: (key: keyof EditableDocumentLine, value: string | number | null) => void;
   onRemove: () => void;
 }) {
+  const { t } = useTranslation();
   const [menuOpen, setMenuOpen] = React.useState(false);
 
   const totalHt = line.quantite * line.prix_unitaire_ht;
@@ -46,7 +48,7 @@ function LineItem({
   return (
     <View style={styles.lineCard}>
           <View style={styles.lineHeader}>
-            <Text style={styles.lineNumber}>Ligne {index + 1}</Text>
+            <Text style={styles.lineNumber}>{t('line')} {index + 1}</Text>
             <TouchableOpacity style={styles.deleteBtn} onPress={onRemove}>
               <MaterialCommunityIcons name="delete-outline" size={20} color="#DC2626" />
             </TouchableOpacity>
@@ -59,7 +61,7 @@ function LineItem({
               <TouchableOpacity style={styles.produitBtn} onPress={() => setMenuOpen(true)}>
                 <MaterialCommunityIcons name="package-variant" size={18} color="#6B7280" />
                 <Text style={styles.produitBtnText}>
-                  {line.designation || 'Choisir un produit'}
+                  {line.designation || t('select_product')}
                 </Text>
                 <MaterialCommunityIcons name="chevron-down" size={18} color="#6B7280" />
               </TouchableOpacity>
@@ -78,7 +80,7 @@ function LineItem({
             <View style={styles.smallField}>
               <TextInput
                 mode="outlined"
-                label="Ref"
+                label={t('ref')}
                 value={line.ref}
                 onChangeText={text => onUpdate('ref', text)}
                 style={styles.input}
@@ -88,7 +90,7 @@ function LineItem({
             <View style={styles.smallField}>
               <TextInput
                 mode="outlined"
-                label="Qté"
+                label={t('qty')}
                 keyboardType="numeric"
                 value={String(line.quantite)}
                 onChangeText={text => onUpdate('quantite', Number(text) || 0)}
@@ -99,7 +101,7 @@ function LineItem({
             <View style={styles.smallField}>
               <TextInput
                 mode="outlined"
-                label="Prix unit. HT"
+                label={t('unit_price_ht')}
                 keyboardType="numeric"
                 value={String(line.prix_unitaire_ht)}
                 onChangeText={text => onUpdate('prix_unitaire_ht', Number(text) || 0)}
@@ -110,7 +112,7 @@ function LineItem({
           </View>
 
           <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Total HT:</Text>
+            <Text style={styles.totalLabel}>{t('total_ht')}:</Text>
             <Text style={styles.totalValue}>{totalHt.toFixed(2)} DH</Text>
           </View>
       </View>
@@ -122,6 +124,7 @@ function DocumentLineEditor({
   lines,
   onChange,
 }: DocumentLineEditorProps) {
+  const { t } = useTranslation();
   const updateLine = (
     index: number,
     key: keyof EditableDocumentLine,
@@ -147,8 +150,8 @@ function DocumentLineEditor({
   return (
     <View style={styles.container}>
       <View style={styles.tableHeader}>
-        <Text style={styles.tableHeaderTitle}>Lignes du document</Text>
-        <Text style={styles.tableHeaderCount}>{lines.length} ligne{lines.length > 1 ? 's' : ''}</Text>
+        <Text style={styles.tableHeaderTitle}>{t('lines')}</Text>
+        <Text style={styles.tableHeaderCount}>{lines.length} {t('line')}{lines.length > 1 ? 's' : ''}</Text>
       </View>
 
       {lines.map((line, index) => (
@@ -169,7 +172,7 @@ function DocumentLineEditor({
         style={styles.addBtn}
         labelStyle={styles.addBtnLabel}
       >
-        Ajouter une ligne
+        {t('add_line')}
       </Button>
     </View>
   );

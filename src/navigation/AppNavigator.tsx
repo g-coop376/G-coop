@@ -2,6 +2,7 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTheme } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { useAuth, useAuthBootstrap } from '../hooks/useAuth';
 import AuthNavigator from './AuthNavigator';
 import MainNavigator from './MainNavigator';
@@ -46,10 +47,12 @@ export function resolveAppFlow(
 }
 
 function Loader() {
-  return <AppSplash title="G-COOP" tagline="Discover Moroccan products." caption="Loading your cooperative workspace." showLoader />;
+  const { t } = useTranslation();
+  return <AppSplash title="G-COOP" tagline={t('welcome_subtitle')} caption={t('app_tagline')} showLoader />;
 }
 
 function AppNavigator() {
+  const { t } = useTranslation();
   const initialized = useAuthBootstrap();
   const { session, profile, pendingAuthScreen, processingDeepLink } = useAuth();
   const navigationTheme = useNavigationTheme();
@@ -77,7 +80,7 @@ function AppNavigator() {
           <RootStack.Screen
             name="Onboarding"
             component={OnboardingScreen}
-            options={{ title: 'Onboarding' }}
+            options={{ title: t('onboarding_title') }}
           />
         </RootStack.Navigator>
       ) : (
@@ -88,28 +91,24 @@ function AppNavigator() {
             headerShadowVisible: false,
             contentStyle: { backgroundColor: theme.colors.background },
           }}>
-          <RootStack.Screen
-            name="MainTabs"
-            component={MainNavigator}
-            options={{ headerShown: false }}
-          />
-          <RootStack.Screen name="ClientForm" component={ClientFormScreen} options={{ title: 'Client' }} />
-          <RootStack.Screen name="ProductForm" component={ProductFormScreen} options={{ title: 'Produit' }} />
+          <RootStack.Screen name="MainTabs" component={MainNavigator} options={{ headerShown: false }} />
+          <RootStack.Screen name="ClientForm" component={ClientFormScreen} options={{ title: t('clients') }} />
+          <RootStack.Screen name="ProductForm" component={ProductFormScreen} options={{ title: t('products') }} />
           <RootStack.Screen
             name="SupplierForm"
             component={SupplierFormScreen}
-            options={{ title: 'Fournisseur' }}
+            options={{ title: t('suppliers_title') }}
           />
           <RootStack.Screen
             name="Fournisseurs"
             component={FournisseursListScreen}
-            options={{ title: 'Fournisseurs' }}
+            options={{ title: t('suppliers_title') }}
           />
-          <RootStack.Screen name="Stock" component={StockScreen} options={{ title: 'Stock' }} />
+          <RootStack.Screen name="Stock" component={StockScreen} options={{ title: t('stock_title') }} />
           <RootStack.Screen
             name="DocumentForm"
             component={DocumentFormScreen}
-            options={{ title: 'Document' }}
+            options={{ title: t('documents') }}
           />
         </RootStack.Navigator>
       )}

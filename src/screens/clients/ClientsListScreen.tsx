@@ -1,6 +1,7 @@
 import React from 'react';
 import { FlatList } from 'react-native';
 import { FAB, Searchbar } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import ScreenContainer from '../../components/common/ScreenContainer';
 import EntityListItem from '../../components/common/EntityListItem';
 import { useClients } from '../../hooks/useClients';
@@ -11,11 +12,12 @@ function ClientsListScreen({
 }: {
   navigation: { navigate: (screen: string, params?: { client?: Client }) => void };
 }) {
+  const { t } = useTranslation();
   const { clients, loading, search, setSearch, removeClient } = useClients();
 
   return (
-    <ScreenContainer title="Clients" loading={loading}>
-      <Searchbar placeholder="Rechercher un client" value={search} onChangeText={setSearch} />
+    <ScreenContainer title={t('clients')} loading={loading}>
+      <Searchbar placeholder={t('search_client')} value={search} onChangeText={setSearch} />
       <FlatList
         data={clients}
         scrollEnabled={false}

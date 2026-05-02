@@ -2,6 +2,7 @@ import React from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Text, useTheme } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import ScreenContainer from '../../components/common/ScreenContainer';
 import StatCard from '../../components/common/StatCard';
 import SectionCard from '../../components/admin/SectionCard';
@@ -36,6 +37,7 @@ function formatRatio(value: number, total: number) {
 }
 
 function SuperAdminDashboardScreen() {
+  const { t } = useTranslation();
   const theme = useTheme();
   const [stats, setStats] = React.useState<DashboardStats>(initialStats);
   const [loading, setLoading] = React.useState(true);
@@ -97,62 +99,62 @@ function SuperAdminDashboardScreen() {
       <View style={styles.hero}>
         <View style={styles.heroCopy}>
           <Text variant="headlineMedium" style={[styles.heroTitle, { color: theme.colors.onSurface }]}>
-            Admin dashboard
+            {t('admin_dashboard')}
           </Text>
           <Text variant="bodyLarge" style={{ color: theme.colors.onSurfaceVariant }}>
-            A clean overview of platform activity, invitation flow, and growth across organizations.
+            {t('clean_workflow')}
           </Text>
         </View>
       </View>
 
       <View style={styles.grid}>
         <StatCard
-          label="Organizations"
+          label={t('stats_organizations')}
           value={String(stats.organizations)}
-          helper="Active tenants on the platform"
+          helper={t('active_tenants')}
           icon="office-building-outline"
           accentColor={appColors.brand}
         />
         <StatCard
-          label="Users"
+          label={t('stats_users')}
           value={String(stats.users)}
-          helper="Profiles with access"
+          helper={t('profiles_with_access')}
           icon="account-group-outline"
           accentColor={appColors.info}
         />
         <StatCard
-          label="Products"
+          label={t('stats_products')}
           value={String(stats.products)}
-          helper="Catalog items across orgs"
+          helper={t('catalog_items')}
           icon="package-variant-closed"
           accentColor={appColors.accent}
         />
         <StatCard
-          label="Documents"
+          label={t('stats_documents')}
           value={String(stats.documents)}
-          helper="Generated business records"
+          helper={t('generated_records')}
           icon="file-document-multiple-outline"
           accentColor={appColors.success}
         />
       </View>
 
       <SectionCard
-        title="Invitation health"
-        subtitle="Live distribution of processed invitations">
+        title={t('invitation_health')}
+        subtitle={t('live_distribution')}>
         <View style={styles.invitationSummary}>
           <StatCard
-            label="Pending"
+            label={t('pending')}
             value={String(stats.invitationsPending)}
-            helper="Waiting for admin action"
+            helper={t('waiting_for_action')}
             icon="clock-outline"
             accentColor={appColors.accent}
             trendLabel={totalInvitations > 0 ? `${Math.round(formatRatio(stats.invitationsPending, totalInvitations) * 100)}%` : '0%'}
             progress={formatRatio(stats.invitationsPending, Math.max(totalInvitations, 1))}
           />
           <StatCard
-            label="Accepted"
+            label={t('accepted')}
             value={String(stats.invitationsAccepted)}
-            helper="Completed onboarding"
+            helper={t('completed_onboarding')}
             icon="check-decagram-outline"
             accentColor={appColors.success}
             trendLabel={totalInvitations > 0 ? `${Math.round(formatRatio(stats.invitationsAccepted, totalInvitations) * 100)}%` : '0%'}
@@ -161,17 +163,17 @@ function SuperAdminDashboardScreen() {
         </View>
         <AdminKpiChart
           items={[
-            { label: 'Organizations', value: stats.organizations, color: appColors.brand },
-            { label: 'Users', value: stats.users, color: appColors.info },
-            { label: 'Products', value: stats.products, color: appColors.accent },
-            { label: 'Documents', value: stats.documents, color: appColors.success },
+            { label: t('stats_organizations'), value: stats.organizations, color: appColors.brand },
+            { label: t('stats_users'), value: stats.users, color: appColors.info },
+            { label: t('stats_products'), value: stats.products, color: appColors.accent },
+            { label: t('stats_documents'), value: stats.documents, color: appColors.success },
           ]}
         />
       </SectionCard>
 
       <SectionCard
-        title="Operational snapshot"
-        subtitle="High-level signals for today">
+        title={t('operational_snapshot')}
+        subtitle={t('high_level_signals')}>
         <View style={styles.snapshotRow}>
           <View
             style={[
@@ -179,10 +181,10 @@ function SuperAdminDashboardScreen() {
               { backgroundColor: theme.colors.surfaceVariant },
             ]}>
             <Text variant="labelLarge" style={{ color: theme.colors.onSurfaceVariant }}>
-              Pending load
+              {t('pending_load')}
             </Text>
             <Text variant="headlineSmall" style={{ color: theme.colors.onSurface }}>
-              {stats.invitationsPending > 0 ? 'Needs follow-up' : 'Stable'}
+              {stats.invitationsPending > 0 ? t('needs_follow_up') : t('stable')}
             </Text>
           </View>
           <View
@@ -191,10 +193,10 @@ function SuperAdminDashboardScreen() {
               { backgroundColor: theme.colors.surfaceVariant },
             ]}>
             <Text variant="labelLarge" style={{ color: theme.colors.onSurfaceVariant }}>
-              Adoption signal
+              {t('adoption_signal')}
             </Text>
             <Text variant="headlineSmall" style={{ color: theme.colors.onSurface }}>
-              {stats.organizations > 0 ? Math.round((stats.users / stats.organizations) * 10) / 10 : 0} users / org
+              {stats.organizations > 0 ? Math.round((stats.users / stats.organizations) * 10) / 10 : 0} {t('users_per_org')}
             </Text>
           </View>
         </View>

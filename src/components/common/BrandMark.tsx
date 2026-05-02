@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Text, useTheme } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 
 interface BrandMarkProps {
   compact?: boolean;
@@ -9,6 +10,7 @@ interface BrandMarkProps {
 
 function BrandMark({ compact = false }: BrandMarkProps) {
   const theme = useTheme();
+  const { t } = useTranslation();
 
   return (
     <View style={[styles.row, compact && styles.rowCompact]}>
@@ -26,7 +28,7 @@ function BrandMark({ compact = false }: BrandMarkProps) {
           G-COOP
         </Text>
         <Text variant={compact ? 'bodySmall' : 'bodyMedium'} style={{ color: theme.colors.onSurfaceVariant }}>
-          Cooperative workspace
+          {t('app_tagline')}
         </Text>
       </View>
     </View>
