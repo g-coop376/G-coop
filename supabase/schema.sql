@@ -36,7 +36,7 @@ begin
     from pg_type
     where typname = 'document_type'
   ) then
-    create type document_type as enum ('bon_livraison', 'devis', 'facture');
+    create type document_type as enum ('bon_commande', 'bon_livraison', 'facture');
   end if;
 
   if not exists (
@@ -174,6 +174,7 @@ create table if not exists public.document_lignes (
   ref text,
   designation text not null,
   quantite numeric(12,2) not null,
+  unite text,
   prix_unitaire_ht numeric(12,2) not null,
   total_ht numeric(12,2) not null,
   created_at timestamptz not null default now(),

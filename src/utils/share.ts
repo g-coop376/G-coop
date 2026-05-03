@@ -89,3 +89,7 @@ export async function shareFile(filePath: string, title: string) {
     }
   }
 }
+
+export async function sharePdf(filePath: string, title: string = 'Document') {
+  return shareFile(filePath, title);
+}

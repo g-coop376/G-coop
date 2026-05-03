@@ -14,7 +14,7 @@ function MoreScreen({ navigation }: { navigation: { navigate: (screen: string) =
         <Card.Content style={{ gap: 8 }}>
           <Text variant="titleMedium">{organization?.nom ?? t('organization')}</Text>
           <Text>{organization?.adresse ?? ''}</Text>
-          <Text>TVA: {organization?.tva ?? 0}%</Text>
+          <Text>{organization?.telephone ?? ''}</Text>
         </Card.Content>
       </Card>
       <Button mode="contained-tonal" onPress={() => navigation.navigate('Stock')}>

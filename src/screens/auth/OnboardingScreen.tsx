@@ -89,7 +89,7 @@ function OnboardingScreen() {
           <FormTextField control={control as never} name="ice" label="ICE" />
           <FormTextField control={control as never} name="rc" label="RC" />
           {orgType === 'societe' ? (
-            <FormTextField control={control as never} name="tva" label="TVA (%)" keyboardType="numeric" />
+            <Text>{t('tva_applied')}: {tva}%</Text>
           ) : (
             <Text>{t('tva_applied')}: {tva}%</Text>
           )}

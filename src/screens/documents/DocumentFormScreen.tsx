@@ -7,25 +7,20 @@ import {
   View,
   Modal,
   FlatList,
+  I18nManager,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
-import { Text, TextInput } from 'react-native-paper';
+import { Text, TextInput as PaperInput } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTranslation } from 'react-i18next';
 import DocumentLineEditor, { type EditableDocumentLine } from '../../components/documents/DocumentLineEditor';
 import { useDocuments } from '../../hooks/useDocuments';
 import type { Client, DocumentType, DocumentWithRelations } from '../../types';
 import { DOC_TYPE_CONFIG } from '../../types';
+import { COLORS, RADIUS, SPACING } from '../../theme/theme';
 
-const COLORS = {
-  grayLight: '#F9FAFB',
-  white: '#FFFFFF',
-  dark: '#111827',
-  gray: '#6B7280',
-  border: '#E5E7EB',
-  danger: '#DC2626',
-};
-
-const DOC_TYPES: DocumentType[] = ['bon_livraison', 'devis', 'facture'];
+const DOC_TYPES: DocumentType[] = ['facture', 'bon_commande', 'bon_livraison'];
 
 function ClientPickerModal({
   visible,
@@ -64,7 +59,7 @@ function ClientPickerModal({
                 {item.telephone ? <Text style={styles.clientTel}>{item.telephone}</Text> : null}
               </View>
               {item.id === selectedId && (
-                <MaterialCommunityIcons name="check-circle" size={20} color="#1A3C8F" />
+                <MaterialCommunityIcons name="check-circle" size={20} color={COLORS.primary} />
               )}
             </TouchableOpacity>
           )}
@@ -83,8 +78,9 @@ function DocumentFormScreen({
 }) {
   const { t } = useTranslation();
   const document = route?.params?.document;
-  const initialType = route?.params?.type ?? document?.type ?? 'devis';
+  const initialType = route?.params?.type ?? document?.type ?? 'facture';
   const { clients, produits, saveDocument, exportAndShare } = useDocuments();
+  const isRTL = I18nManager.isRTL;
 
   const [type, setType] = React.useState<DocumentType>(initialType);
   const [date, setDate] = React.useState(document?.date_document ?? new Date().toISOString().slice(0, 10));
@@ -92,32 +88,34 @@ function DocumentFormScreen({
   const [clientId, setClientId] = React.useState<string | null>(document?.client_id ?? null);
   const [lieuLivraison, setLieuLivraison] = React.useState(document?.lieu_livraison ?? '');
   const [numeroCommande, setNumeroCommande] = React.useState(document?.numero_commande ?? '');
+  const [paymentMethod, setPaymentMethod] = React.useState<string>('cash');
+  const [deliveryFee, setDeliveryFee] = React.useState<number>(0);
   const [lines, setLines] = React.useState<EditableDocumentLine[]>(
     document?.lignes?.map(line => ({
       produit_id: line.produit_id,
       ref: line.ref ?? '',
       designation: line.designation,
       quantite: line.quantite,
+      unite: line.unite || 'Pièce',
       prix_unitaire_ht: line.prix_unitaire_ht,
-    })) ?? [{ produit_id: null, ref: '', designation: '', quantite: 1, prix_unitaire_ht: 0 }],
+    })) ?? [{ produit_id: null, ref: '', designation: '', quantite: 1, unite: 'Pièce', prix_unitaire_ht: 0 }],
   );
   const [clientModal, setClientModal] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
 
   const selectedClient = clients.find(c => c.id === clientId);
   const config = DOC_TYPE_CONFIG[type];
+
   const subtotal = lines.reduce((s, l) => s + l.quantite * l.prix_unitaire_ht, 0);
-  const tvaRate = 20;
-  const tvaAmount = subtotal * (tvaRate / 100);
-  const totalTTC = subtotal + tvaAmount;
+  const totalTTC = subtotal + deliveryFee;
 
   const handleSave = async (andShare = false) => {
     if (!clientId) {
-      Alert.alert(t('modify_document'), t('select_client'));
+      Alert.alert(t('error'), t('select_client_required'));
       return;
     }
     if (lines.every(l => !l.designation && l.prix_unitaire_ht === 0)) {
-      Alert.alert(t('modify_document'), t('add_line'));
+      Alert.alert(t('error'), t('add_line_required'));
       return;
     }
     setSaving(true);
@@ -127,7 +125,7 @@ function DocumentFormScreen({
       date_document: date,
       client_id: clientId,
       lieu_livraison: type === 'bon_livraison' ? lieuLivraison : null,
-      numero_commande: type === 'bon_livraison' ? numeroCommande : null,
+      numero_commande: type === 'bon_commande' ? numeroCommande : null,
       notes,
       lines,
     });
@@ -140,68 +138,194 @@ function DocumentFormScreen({
     }
   };
 
+  const renderSectionCard = (title: string, icon: string, children: React.ReactNode) => (
+    <View style={styles.card}>
+      <View style={styles.cardHeader}>
+        <View style={styles.cardHeaderLeft}>
+          <View style={[styles.cardIconBg, { backgroundColor: config.color + '15' }]}>
+            <MaterialCommunityIcons name={icon} size={18} color={config.color} />
+          </View>
+          <Text style={styles.cardTitle}>{title}</Text>
+        </View>
+      </View>
+      {children}
+    </View>
+  );
+
   return (
-    <View style={styles.screen}>
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.screen}
+    >
       <View style={[styles.header, { backgroundColor: config.color }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <MaterialCommunityIcons name="arrow-left" size={24} color={COLORS.white} />
+          <MaterialCommunityIcons name={isRTL ? 'arrow-right' : 'arrow-left'} size={24} color={COLORS.white} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>
-          {document ? t('modify_document') : t('new_invoice')} {config.label}
-        </Text>
-        <View style={{ width: 40 }} />
+        <Text style={styles.headerTitle}>{config.label}</Text>
+        <TouchableOpacity style={styles.backBtn} onPress={() => document && exportAndShare(document)}>
+          <MaterialCommunityIcons name="share-variant" size={22} color={COLORS.white} />
+        </TouchableOpacity>
       </View>
 
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>{t('document_type')}</Text>
+      <ScrollView 
+        style={{ flex: 1 }} 
+        contentContainerStyle={styles.content} 
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Type de document */}
+        {renderSectionCard(t('document_type'), 'file-document-edit-outline', (
           <View style={styles.typeRow}>
             {DOC_TYPES.map(dt => {
               const dc = DOC_TYPE_CONFIG[dt];
+              const isActive = type === dt;
               return (
                 <TouchableOpacity
                   key={dt}
                   style={[
                     styles.typeChip,
-                    type === dt && { backgroundColor: dc.color, borderColor: dc.color },
+                    isActive && { backgroundColor: dc.color, borderColor: dc.color },
                   ]}
                   onPress={() => setType(dt)}
+                  activeOpacity={0.7}
                 >
                   <MaterialCommunityIcons
                     name={dc.icon}
                     size={16}
-                    color={type === dt ? '#FFF' : dc.color}
+                    color={isActive ? '#FFF' : dc.color}
                   />
-                  <Text style={[styles.typeChipTxt, type === dt && { color: '#FFF' }]}>
+                  <Text style={[styles.typeChipTxt, isActive && { color: '#FFF' }]}>
                     {dc.label}
                   </Text>
                 </TouchableOpacity>
               );
             })}
           </View>
-        </View>
+        ))}
 
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>{t('date')}</Text>
-          <View style={styles.inputWrap}>
-            <View style={{ marginRight: 12 }}>
-              <MaterialCommunityIcons name="calendar" size={20} color={config.color} />
+        {/* Info coopérative */}
+        {renderSectionCard(t('coop_info'), 'office-building-outline', (
+          <View style={styles.coopInfo}>
+            <View style={styles.coopLogoRow}>
+              <View style={[styles.coopLogo, { backgroundColor: config.color + '15' }]}>
+                <MaterialCommunityIcons name="handshake" size={28} color={config.color} />
+              </View>
+              <View>
+                <Text style={styles.coopName}>COOP ONAS9</Text>
+                <Text style={styles.coopSubtitle}>Coopérative Agricole</Text>
+              </View>
             </View>
-            <TextInput
-              style={styles.input}
-              mode="flat"
-              underlineColor="transparent"
-              activeUnderlineColor="transparent"
-              value={date}
-              onChangeText={setDate}
-              placeholder="YYYY-MM-DD"
-            />
+            <View style={styles.infoGrid}>
+              <View style={styles.infoItem}>
+                <MaterialCommunityIcons name="map-marker-outline" size={14} color={COLORS.textGray} />
+                <Text style={styles.infoText}>Douar Onas9, Commune Rurale Ait Ourir</Text>
+              </View>
+              <View style={styles.infoItem}>
+                <MaterialCommunityIcons name="phone-outline" size={14} color={COLORS.textGray} />
+                <Text style={styles.infoText}>+212 6 12 34 56 78</Text>
+              </View>
+              <View style={styles.infoItem}>
+                <MaterialCommunityIcons name="card-account-details-outline" size={14} color={COLORS.textGray} />
+                <Text style={styles.infoText}>ICE: 00123456700012</Text>
+              </View>
+              <View style={styles.infoItem}>
+                <MaterialCommunityIcons name="email-outline" size={14} color={COLORS.textGray} />
+                <Text style={styles.infoText}>contact@cooponas9.ma</Text>
+              </View>
+            </View>
           </View>
-        </View>
+        ))}
 
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>{t('client')}</Text>
-          <TouchableOpacity style={styles.selectBox} onPress={() => setClientModal(true)}>
+        {/* Info document */}
+        {renderSectionCard(t('document_info'), 'information-outline', (
+          <>
+            <View style={styles.inputRow}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>{t('date')}</Text>
+                <View style={styles.inputWrap}>
+                  <MaterialCommunityIcons name="calendar" size={18} color={config.color} />
+                  <PaperInput
+                    value={date}
+                    onChangeText={setDate}
+                    style={styles.dateInput}
+                    mode="flat"
+                    underlineColor="transparent"
+                    activeUnderlineColor="transparent"
+                    dense
+                  />
+                </View>
+              </View>
+            </View>
+
+            {type === 'bon_commande' && (
+              <View style={styles.inputRow}>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>{t('payment_delay')}</Text>
+                  <View style={styles.inputWrap}>
+                    <MaterialCommunityIcons name="clock-outline" size={18} color={config.color} />
+                    <Text style={styles.inputValue}>30 jours</Text>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {type === 'facture' && (
+              <View style={styles.inputRow}>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>{t('payment_method')}</Text>
+                  <View style={styles.paymentRow}>
+                    {[
+                      { key: 'cash', icon: 'cash', label: t('cash') },
+                      { key: 'check', icon: 'check', label: t('check') },
+                      { key: 'transfer', icon: 'bank-transfer', label: t('transfer') },
+                    ].map(pm => (
+                      <TouchableOpacity
+                        key={pm.key}
+                        style={[styles.paymentChip, paymentMethod === pm.key && { backgroundColor: config.color, borderColor: config.color }]}
+                        onPress={() => setPaymentMethod(pm.key)}
+                        activeOpacity={0.7}
+                      >
+                        <MaterialCommunityIcons
+                          name={pm.icon}
+                          size={14}
+                          color={paymentMethod === pm.key ? '#FFF' : config.color}
+                        />
+                        <Text style={[styles.paymentChipTxt, paymentMethod === pm.key && { color: '#FFF' }]}>
+                          {pm.label}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {type === 'bon_livraison' && (
+              <View style={styles.inputRow}>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>{t('delivery_location')}</Text>
+                  <View style={styles.inputWrap}>
+                    <MaterialCommunityIcons name="map-marker" size={18} color={config.color} />
+                    <PaperInput
+                      value={lieuLivraison}
+                      onChangeText={setLieuLivraison}
+                      placeholder="Taroudant"
+                      style={styles.dateInput}
+                      mode="flat"
+                      underlineColor="transparent"
+                      activeUnderlineColor="transparent"
+                      dense
+                    />
+                  </View>
+                </View>
+              </View>
+            )}
+          </>
+        ))}
+
+        {/* Client */}
+        {renderSectionCard(t('client'), 'account-outline', (
+          <TouchableOpacity style={styles.selectBox} onPress={() => setClientModal(true)} activeOpacity={0.7}>
             {selectedClient ? (
               <View style={styles.selectRow}>
                 <View style={styles.clientAvatar}>
@@ -210,96 +334,102 @@ function DocumentFormScreen({
                 <View style={{ flex: 1 }}>
                   <Text style={styles.selectVal}>{selectedClient.nom}</Text>
                   {selectedClient.telephone ? <Text style={styles.selectSub}>{selectedClient.telephone}</Text> : null}
+                  {selectedClient.adresse ? <Text style={styles.selectSub}>{selectedClient.adresse}</Text> : null}
                 </View>
-                <MaterialCommunityIcons name="chevron-down" size={20} color={COLORS.gray} />
+                <MaterialCommunityIcons name="chevron-down" size={20} color={COLORS.textGray} />
               </View>
             ) : (
               <View style={styles.selectRow}>
                 <MaterialCommunityIcons name="account-plus-outline" size={22} color={config.color} />
                 <Text style={styles.selectPlaceholder}>{t('select_client')}</Text>
-                <MaterialCommunityIcons name="chevron-down" size={20} color={COLORS.gray} />
+                <MaterialCommunityIcons name="chevron-down" size={20} color={COLORS.textGray} />
               </View>
             )}
           </TouchableOpacity>
-        </View>
+        ))}
 
-        {type === 'bon_livraison' && (
-          <>
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>{t('delivery_location')}</Text>
-              <View style={styles.inputWrap}>
-                <View style={{ marginRight: 12 }}>
-                  <MaterialCommunityIcons name="map-marker" size={20} color={config.color} />
-                </View>
-                <TextInput
-                  style={styles.input}
-                  mode="flat"
-                  underlineColor="transparent"
-                  activeUnderlineColor="transparent"
-                  value={lieuLivraison}
-                  onChangeText={setLieuLivraison}
-                  placeholder={t('delivery_location')}
-                />
-              </View>
-            </View>
-
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>{t('order_number')}</Text>
-              <View style={styles.inputWrap}>
-                <View style={{ marginRight: 12 }}>
-                  <MaterialCommunityIcons name="format-list-numbered" size={20} color={config.color} />
-                </View>
-                <TextInput
-                  style={styles.input}
-                  mode="flat"
-                  underlineColor="transparent"
-                  activeUnderlineColor="transparent"
-                  value={numeroCommande}
-                  onChangeText={setNumeroCommande}
-                  placeholder={t('order_number')}
-                />
-              </View>
-            </View>
-          </>
-        )}
-
-        <View style={styles.section}>
-          <DocumentLineEditor produits={produits} lines={lines} onChange={setLines} />
-        </View>
-
-        <View style={styles.summaryBox}>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>{t('amount_ht')}</Text>
-            <Text style={styles.summaryVal}>{subtotal.toFixed(2)} DH</Text>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>{t('tva_20')}</Text>
-            <Text style={styles.summaryVal}>{tvaAmount.toFixed(2)} DH</Text>
-          </View>
-          <View style={[styles.summaryRow, styles.summaryTotal]}>
-            <Text style={styles.totalLabel}>{t('amount_ttc')}</Text>
-            <Text style={[styles.totalVal, { color: config.color }]}>{totalTTC.toFixed(2)} DH</Text>
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>{t('notes')}</Text>
-          <TextInput
-            mode="outlined"
-            value={notes}
-            onChangeText={setNotes}
-            placeholder={t('additional_notes')}
-            multiline
-            numberOfLines={3}
-            outlineStyle={{ borderColor: COLORS.border, borderRadius: 12 }}
+        {/* Lignes de produits */}
+        <View style={styles.card}>
+          <DocumentLineEditor
+            produits={produits}
+            lines={lines}
+            onChange={setLines}
+            accentColor={config.color}
           />
         </View>
 
+        {/* Totaux */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <View style={styles.cardHeaderLeft}>
+              <View style={[styles.cardIconBg, { backgroundColor: config.color + '15' }]}>
+                <MaterialCommunityIcons name="calculator" size={18} color={config.color} />
+              </View>
+              <Text style={styles.cardTitle}>{t('total')}</Text>
+            </View>
+          </View>
+
+          <View style={styles.totalsContainer}>
+            <View style={styles.totalLine}>
+              <Text style={styles.totalLineLabel}>{t('subtotal')}</Text>
+              <Text style={styles.totalLineValue}>{subtotal.toFixed(2)} DH</Text>
+            </View>
+            <View style={styles.totalLine}>
+              <Text style={styles.totalLineLabel}>{t('delivery')}</Text>
+              <Text style={styles.totalLineValue}>{deliveryFee.toFixed(2)} DH</Text>
+            </View>
+            <View style={[styles.totalLine, styles.totalGrand, { backgroundColor: config.color }]}>
+              <Text style={styles.totalGrandLabel}>{t('net_to_pay')}</Text>
+              <Text style={styles.totalGrandValue}>{totalTTC.toFixed(2)} DH</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Notes */}
+        {renderSectionCard(t('notes'), 'note-text-outline', (
+          <View style={styles.notesArea}>
+            <PaperInput
+              value={notes}
+              onChangeText={setNotes}
+              placeholder={t('additional_notes')}
+              multiline
+              numberOfLines={4}
+              style={styles.notesInput}
+              mode="flat"
+              underlineColor="transparent"
+              activeUnderlineColor="transparent"
+            />
+          </View>
+        ))}
+
+        {/* Signatures */}
+        {renderSectionCard(t('signature'), 'pencil-outline', (
+          <View style={styles.signatureRow}>
+            <View style={styles.signatureBox}>
+              <Text style={styles.signatureTitle}>{t('client_signature')}</Text>
+              <View style={styles.signatureSpace}>
+                <Text style={styles.signatureHint}>Signature</Text>
+              </View>
+            </View>
+            <View style={styles.signatureBox}>
+              <Text style={styles.signatureTitle}>{t('supplier_signature')}</Text>
+              <View style={styles.signatureSpace}>
+                <View style={styles.stampPlaceholder}>
+                  <MaterialCommunityIcons name="stamp" size={24} color={COLORS.grayMedium} />
+                  <Text style={styles.stampText}>{t('stamp')}</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+        ))}
+
+        {/* Boutons d'action */}
         <View style={styles.btnRow}>
           <TouchableOpacity
             style={[styles.btn, styles.btnOutline]}
             onPress={() => handleSave(true)}
             disabled={saving}
+            activeOpacity={0.7}
           >
             <MaterialCommunityIcons name="file-pdf-box" size={20} color={COLORS.danger} />
             <Text style={[styles.btnTxt, { color: COLORS.danger }]}>{t('save_and_print')}</Text>
@@ -308,11 +438,14 @@ function DocumentFormScreen({
             style={[styles.btn, styles.btnPrimary, { backgroundColor: config.color }, saving && { opacity: 0.6 }]}
             onPress={() => handleSave(false)}
             disabled={saving}
+            activeOpacity={0.7}
           >
             <MaterialCommunityIcons name="content-save-outline" size={20} color="#FFF" />
             <Text style={[styles.btnTxt, { color: '#FFF' }]}>{t('save_document')}</Text>
           </TouchableOpacity>
         </View>
+
+        <View style={{ height: SPACING.xxxl }} />
       </ScrollView>
 
       <ClientPickerModal
@@ -322,102 +455,212 @@ function DocumentFormScreen({
         onSelect={setClientId}
         onClose={() => setClientModal(false)}
       />
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: COLORS.grayLight },
+  screen: { flex: 1, backgroundColor: COLORS.background },
 
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    paddingHorizontal: SPACING.lg,
     paddingTop: 52,
-    paddingBottom: 16,
+    paddingBottom: SPACING.lg,
   },
   backBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
   headerTitle: { color: '#FFF', fontSize: 18, fontWeight: '700' },
 
-  content: { padding: 16, gap: 12, paddingBottom: 40 },
-  section: { gap: 8 },
-  sectionLabel: { fontSize: 13, fontWeight: '600', color: COLORS.gray },
+  content: { padding: SPACING.lg, gap: SPACING.lg, paddingBottom: 40 },
 
-  typeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  card: {
+    backgroundColor: COLORS.card,
+    borderRadius: RADIUS.xl,
+    padding: SPACING.lg,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.md },
+  cardHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  cardIconBg: {
+    width: 32,
+    height: 32,
+    borderRadius: RADIUS.sm,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cardTitle: { fontSize: 15, fontWeight: '700', color: COLORS.textDark },
+
+  typeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
   typeChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingHorizontal: 12, paddingVertical: 8,
-    borderRadius: 20, borderWidth: 1.5, borderColor: COLORS.border,
-    backgroundColor: COLORS.white,
+    flexDirection: 'row', alignItems: 'center', gap: SPACING.xs,
+    paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,
+    borderRadius: RADIUS.full, borderWidth: 1.5, borderColor: COLORS.border,
+    backgroundColor: COLORS.card,
   },
-  typeChipTxt: { fontSize: 12, fontWeight: '600', color: COLORS.dark },
+  typeChipTxt: { fontSize: 12, fontWeight: '600', color: COLORS.textDark },
 
-  inputWrap: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: COLORS.white, borderRadius: 12,
-    borderWidth: 1, borderColor: COLORS.border, overflow: 'hidden',
+  coopInfo: { gap: SPACING.sm },
+  coopLogoRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginBottom: SPACING.xs },
+  coopLogo: {
+    width: 44,
+    height: 44,
+    borderRadius: RADIUS.md,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  input: { flex: 1, backgroundColor: 'transparent', fontSize: 15 },
+  coopName: { fontSize: 16, fontWeight: '700', color: COLORS.textDark },
+  coopSubtitle: { fontSize: 12, color: COLORS.textGray },
+  infoGrid: { gap: SPACING.xs },
+  infoItem: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  infoText: { fontSize: 13, color: COLORS.textGray },
+
+  inputRow: { marginBottom: SPACING.sm },
+  inputGroup: { gap: SPACING.xs },
+  inputLabel: { fontSize: 12, fontWeight: '600', color: COLORS.textGray },
+  inputWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    padding: SPACING.md,
+    backgroundColor: COLORS.background,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  inputValue: { fontSize: 14, color: COLORS.textDark, fontWeight: '500' },
+  dateInput: { flex: 1, backgroundColor: 'transparent', height: 20, padding: 0 },
+
+  paymentRow: { flexDirection: 'row', gap: SPACING.sm },
+  paymentChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: RADIUS.full,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.card,
+  },
+  paymentChipTxt: { fontSize: 11, fontWeight: '600', color: COLORS.textDark },
 
   selectBox: {
-    backgroundColor: COLORS.white, borderRadius: 12,
-    borderWidth: 1, borderColor: COLORS.border,
-    padding: 12,
+    backgroundColor: COLORS.background,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: SPACING.md,
   },
-  selectRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  selectVal: { fontSize: 15, fontWeight: '600', color: COLORS.dark, flex: 1 },
-  selectSub: { fontSize: 12, color: COLORS.gray },
-  selectPlaceholder: { flex: 1, color: COLORS.gray, fontSize: 14 },
+  selectRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
+  selectVal: { fontSize: 15, fontWeight: '600', color: COLORS.textDark, flex: 1 },
+  selectSub: { fontSize: 12, color: COLORS.textGray },
+  selectPlaceholder: { flex: 1, color: COLORS.textGray, fontSize: 14 },
 
   clientAvatar: {
-    width: 38, height: 38, borderRadius: 19,
-    backgroundColor: '#EEF2FF',
-    justifyContent: 'center', alignItems: 'center',
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: COLORS.lightBlue,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  clientAvatarTxt: { fontWeight: '700', color: '#1A3C8F', fontSize: 15 },
+  clientAvatarTxt: { fontWeight: '700', color: COLORS.primary, fontSize: 16 },
 
-  summaryBox: {
-    backgroundColor: COLORS.white, borderRadius: 14,
-    padding: 16, gap: 10,
-    borderWidth: 1, borderColor: COLORS.border,
+  totalsContainer: { gap: SPACING.sm },
+  totalLine: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: SPACING.sm,
   },
-  summaryRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  summaryLabel: { color: COLORS.gray, fontSize: 14 },
-  summaryVal: { color: COLORS.dark, fontSize: 14, fontWeight: '600' },
-  summaryTotal: {
-    paddingTop: 10, marginTop: 4,
-    borderTopWidth: 1, borderTopColor: COLORS.border,
+  totalLineLabel: { color: COLORS.textGray, fontSize: 14 },
+  totalLineValue: { color: COLORS.textDark, fontSize: 14, fontWeight: '600' },
+  totalGrand: {
+    borderRadius: RADIUS.md,
+    padding: SPACING.md,
+    marginTop: SPACING.xs,
   },
-  totalLabel: { color: COLORS.dark, fontSize: 16, fontWeight: '700' },
-  totalVal: { fontSize: 18, fontWeight: '800' },
+  totalGrandLabel: { color: 'rgba(255,255,255,0.9)', fontSize: 15, fontWeight: '700' },
+  totalGrandValue: { color: '#FFF', fontSize: 20, fontWeight: '800' },
 
-  btnRow: { flexDirection: 'row', gap: 12, marginTop: 8 },
+  notesArea: {
+    minHeight: 80,
+    padding: SPACING.md,
+    backgroundColor: COLORS.background,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  notesInput: { backgroundColor: 'transparent', fontSize: 14 },
+
+  signatureRow: { flexDirection: 'row', gap: SPACING.md },
+  signatureBox: { flex: 1, gap: SPACING.sm },
+  signatureTitle: { fontSize: 12, fontWeight: '600', color: COLORS.textGray },
+  signatureSpace: {
+    height: 80,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.md,
+    borderStyle: 'dashed',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+  },
+  signatureHint: { fontSize: 12, color: COLORS.grayMedium, fontStyle: 'italic' },
+  stampPlaceholder: { alignItems: 'center', gap: 4 },
+  stampText: { fontSize: 10, color: COLORS.grayMedium },
+
+  btnRow: { flexDirection: 'row', gap: SPACING.md, marginTop: SPACING.lg },
   btn: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 8, paddingVertical: 14, borderRadius: 14,
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.sm,
+    paddingVertical: SPACING.lg,
+    borderRadius: RADIUS.lg,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  btnPrimary: { backgroundColor: '#1A3C8F' },
-  btnOutline: { backgroundColor: COLORS.white, borderWidth: 1.5, borderColor: COLORS.danger },
+  btnPrimary: { backgroundColor: COLORS.primary },
+  btnOutline: { backgroundColor: COLORS.card, borderWidth: 1.5, borderColor: COLORS.danger },
   btnTxt: { fontWeight: '700', fontSize: 15 },
 
   overlay: { flex: 1, backgroundColor: '#00000055' },
   sheet: {
-    backgroundColor: COLORS.white,
-    borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    padding: 24, paddingBottom: 40, maxHeight: '70%',
+    backgroundColor: COLORS.card,
+    borderTopLeftRadius: RADIUS.xxl,
+    borderTopRightRadius: RADIUS.xxl,
+    padding: SPACING.xxl,
+    paddingBottom: SPACING.xxxl,
+    maxHeight: '70%',
   },
-  sheetHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: COLORS.border, alignSelf: 'center', marginBottom: 16 },
-  sheetTitle: { fontSize: 18, fontWeight: '700', color: COLORS.dark, textAlign: 'center', marginBottom: 16 },
+  sheetHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: COLORS.border, alignSelf: 'center', marginBottom: SPACING.lg },
+  sheetTitle: { fontSize: 18, fontWeight: '700', color: COLORS.textDark, textAlign: 'center', marginBottom: SPACING.lg },
 
   clientRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    padding: 14, borderRadius: 12, marginBottom: 8,
-    backgroundColor: COLORS.grayLight,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+    padding: SPACING.md,
+    borderRadius: RADIUS.md,
+    marginBottom: SPACING.sm,
+    backgroundColor: COLORS.background,
   },
-  clientRowSelected: { backgroundColor: '#EEF2FF', borderWidth: 1.5, borderColor: '#1A3C8F' },
-  clientNom: { fontSize: 15, fontWeight: '600', color: COLORS.dark },
-  clientTel: { fontSize: 12, color: COLORS.gray },
+  clientRowSelected: { backgroundColor: COLORS.lightBlue, borderWidth: 1.5, borderColor: COLORS.primary },
+  clientNom: { fontSize: 15, fontWeight: '600', color: COLORS.textDark },
+  clientTel: { fontSize: 12, color: COLORS.textGray },
 });
 
 export default DocumentFormScreen;

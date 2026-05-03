@@ -3,14 +3,15 @@ import { useTranslation } from 'react-i18next';
 
 export type Role = 'super_admin' | 'mol_org';
 export type OrganizationType = 'cooperative' | 'societe';
-export type DocumentType = 'bon_livraison' | 'devis' | 'facture';
+export type DocumentType = 'bon_livraison' | 'bon_commande' | 'facture';
 export type DocumentStatus = 'brouillon' | 'valide' | 'annule';
 
 export const DOC_TYPE_CONFIG: Record<DocumentType, { label: string; icon: string; color: string; prefix: string }> = {
-  bon_livraison: { label: 'Bon de livraison', icon: 'truck-delivery-outline', color: '#0099CC', prefix: 'BL' },
-  devis: { label: 'Devis', icon: 'file-document-outline', color: '#607D8B', prefix: 'DEV' },
-  facture: { label: 'Facture', icon: 'receipt', color: '#9B1B6E', prefix: 'FAC' },
+  bon_livraison: { label: 'Bon de livraison', icon: 'truck-delivery-outline', color: '#1E40AF', prefix: 'BL' },
+  bon_commande: { label: 'Bon de commande', icon: 'clipboard-list-outline', color: '#2563EB', prefix: 'BC' },
+  facture: { label: 'Facture', icon: 'receipt', color: '#1E40AF', prefix: 'FAC' },
 };
+
 export type PendingAuthScreen = 'ResetPassword' | 'SetPassword' | null;
 
 export interface Organization {
@@ -101,8 +102,27 @@ export interface DocumentLigne {
   ref: string | null;
   designation: string;
   quantite: number;
+  unite: string | null;
   prix_unitaire_ht: number;
   total_ht: number;
+}
+
+export interface DocumentLinePayload {
+  produit_id: string | null;
+  ref: string;
+  designation: string;
+  quantite: number;
+  unite: string | null;
+  prix_unitaire_ht: number;
+}
+
+export interface EditableDocumentLine {
+  produit_id: string | null;
+  ref: string;
+  designation: string;
+  quantite: number;
+  unite: string;
+  prix_unitaire_ht: number;
 }
 
 export interface StockMouvement {
@@ -165,8 +185,8 @@ export function getStatusLabel(statut: DocumentStatus): string {
 export function getStatusColor(statut: DocumentStatus): string {
   const colors: Record<DocumentStatus, string> = {
     brouillon: '#F59E0B',
-    valide: '#16A34A',
-    annule: '#DC2626',
+    valide: '#10B981',
+    annule: '#EF4444',
   };
   return colors[statut];
 }

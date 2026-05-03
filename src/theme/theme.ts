@@ -7,33 +7,77 @@ import { MD3DarkTheme, MD3LightTheme, type MD3Theme } from 'react-native-paper';
 
 export type ThemeMode = 'light' | 'dark';
 
-const baseColors = {
-  // Primary bleu (comme dans le screenshot)
+export const COLORS = {
   primary: '#1E40AF',
-  primaryLight: '#3B82F6',
+  secondary: '#2563EB',
+  lightBlue: '#DBEAFE',
+  background: '#F9FAFB',
+  card: '#FFFFFF',
+  textDark: '#111827',
+  textGray: '#6B7280',
+  border: '#E5E7EB',
+  success: '#10B981',
+  danger: '#EF4444',
+  warning: '#F59E0B',
+  white: '#FFFFFF',
+  black: '#000000',
+  grayLight: '#F3F4F6',
+  grayMedium: '#9CA3AF',
   primaryDark: '#1E3A8A',
+  primaryLight: '#3B82F6',
+  secondaryLight: '#60A5FA',
+  lightBlueAlt: '#EFF6FF',
+  successLight: '#D1FAE5',
+  dangerLight: '#FEE2E2',
+  info: '#3B82F6',
+  accent: '#2563EB',
   brand: '#1E40AF',
-  secondary: '#C2A878',
-  backgroundLight: '#F8F5F0',
+};
+
+export const RADIUS = {
+  sm: 6,
+  md: 10,
+  lg: 14,
+  xl: 18,
+  xxl: 24,
+  full: 999,
+};
+
+export const SPACING = {
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  xxl: 24,
+  xxxl: 32,
+};
+
+const baseColors = {
+  primary: COLORS.primary,
+  primaryLight: COLORS.primaryLight,
+  primaryDark: COLORS.primaryDark,
+  brand: COLORS.brand,
+  secondary: COLORS.secondary,
+  backgroundLight: COLORS.background,
   backgroundDark: '#121212',
-  surfaceLight: '#FFFCF8',
+  surfaceLight: COLORS.card,
   surfaceDark: '#1E1E1E',
-  surfaceVariantLight: '#EFE5D5',
+  surfaceVariantLight: COLORS.lightBlue,
   surfaceVariantDark: '#2A2A2A',
-  textLight: '#2E2E2E',
+  textLight: COLORS.textDark,
   textDark: '#FFFFFF',
-  mutedLight: '#756A5C',
+  mutedLight: COLORS.textGray,
   mutedDark: '#D5CFC7',
-  outlineLight: '#D8CCBD',
+  outlineLight: COLORS.border,
   outlineDark: '#3A3A3A',
-  accent: '#C2A878',
-  info: '#8AA55A',
-  success: '#16A34A',
-  warning: '#D4A657',
-  danger: '#DC2626',
-  // Status colors
-  statusAvailable: '#16A34A',
-  statusAvailableBg: '#DCFCE7',
+  accent: COLORS.accent,
+  info: COLORS.info,
+  success: COLORS.success,
+  warning: COLORS.warning,
+  danger: COLORS.danger,
+  statusAvailable: COLORS.success,
+  statusAvailableBg: COLORS.successLight,
   statusLow: '#EA580C',
   statusLowBg: '#FFF7ED',
 };
@@ -44,7 +88,7 @@ export function buildPaperTheme(mode: ThemeMode): MD3Theme {
 
   return {
     ...baseTheme,
-    roundness: 12,
+    roundness: RADIUS.md,
     colors: {
       ...baseTheme.colors,
       primary: baseColors.primary,

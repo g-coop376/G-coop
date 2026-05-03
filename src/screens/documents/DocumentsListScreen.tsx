@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   View,
   StatusBar,
+  RefreshControl,
 } from 'react-native';
 import { Text } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -14,7 +15,7 @@ import { useDocuments } from '../../hooks/useDocuments';
 import type { DocumentType, DocumentWithRelations } from '../../types';
 import { DOC_TYPE_CONFIG, getStatusColor, getStatusLabel } from '../../types';
 
-const DOC_TYPES: DocumentType[] = ['bon_livraison', 'devis', 'facture'];
+const DOC_TYPES: DocumentType[] = ['facture', 'bon_commande', 'bon_livraison'];
 
 const COLORS = {
   bg: '#F4F6FA',
@@ -91,9 +92,15 @@ function DocumentsListScreen({
   };
 }) {
   const { t } = useTranslation();
-  const { documents, loading, fetchDocuments } = useDocuments();
+  const { documents, loading, fetchDocuments, fetchClients, fetchProduits } = useDocuments();
   const [activeTab, setActiveTab] = React.useState<DocumentType>('bon_livraison');
   const [search, setSearch] = React.useState('');
+
+  React.useEffect(() => {
+    fetchDocuments();
+    fetchClients();
+    fetchProduits();
+  }, [fetchDocuments, fetchClients, fetchProduits]);
 
   React.useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
@@ -201,11 +208,18 @@ function DocumentsListScreen({
           <Text style={styles.emptySubtitle}>
             {t('tap_to_create')} {config.label.toLowerCase()}
           </Text>
+          <TouchableOpacity
+            style={[styles.createBtn, { backgroundColor: config.color }]}
+            onPress={() => navigation.navigate('DocumentForm', { type: activeTab })}
+          >
+            <MaterialCommunityIcons name="plus" size={20} color="#FFF" />
+            <Text style={styles.createBtnText}>Créer {config.label}</Text>
+          </TouchableOpacity>
         </View>
       ) : (
         <FlatList
           data={filteredDocs}
-          keyExtractor={item => item.id}
+          keyExtractor={item => item.id || item.numero}
           renderItem={({ item }) => (
             <DocumentCard
               doc={item}
@@ -214,8 +228,9 @@ function DocumentsListScreen({
           )}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
-          refreshing={loading}
-          onRefresh={fetchDocuments}
+          refreshControl={
+            <RefreshControl refreshing={loading} onRefresh={fetchDocuments} />
+          }
         />
       )}
     </View>
@@ -428,6 +443,20 @@ const styles = StyleSheet.create({
     color: COLORS.gray,
     textAlign: 'center',
     lineHeight: 20,
+  },
+  createBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 12,
+    marginTop: 8,
+  },
+  createBtnText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '700',
   },
 });
 

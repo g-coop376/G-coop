@@ -1,246 +1,253 @@
-import React from 'react';
+import { useState, useCallback } from 'react';
 import { Alert } from 'react-native';
 import { supabase } from '../api/supabase';
 import { useAuthStore } from '../store/authStore';
-import type {
+import type { 
+  DocumentWithRelations, 
+  DocumentType, 
+  DocumentLigne, 
+  DocumentStatus,
+  DocumentLinePayload,
+  EditableDocumentLine,
   Client,
-  Document,
-  DocumentLigne,
-  DocumentType,
-  DocumentWithRelations,
-  Produit,
+  Produit 
 } from '../types';
+import { generateDocumentNumber } from '../utils/numerotation';
 import { generateDocumentPdf } from '../utils/pdf';
-import { shareFile } from '../utils/share';
+import { sharePdf } from '../utils/share';
 
-export interface DocumentPayload {
+interface UseDocumentsReturn {
+  documents: DocumentWithRelations[];
+  clients: Client[];
+  produits: Produit[];
+  loading: boolean;
+  fetchDocuments: () => Promise<void>;
+  fetchClients: () => Promise<void>;
+  fetchProduits: () => Promise<void>;
+  saveDocument: (data: SaveDocumentData) => Promise<boolean>;
+  deleteDocument: (id: string) => Promise<boolean>;
+  exportAndShare: (doc: DocumentWithRelations) => Promise<void>;
+  generatePdf: (doc: DocumentWithRelations) => Promise<string>;
+}
+
+export interface SaveDocumentData {
   id?: string;
   type: DocumentType;
   date_document: string;
-  client_id?: string | null;
+  client_id: string | null;
   lieu_livraison?: string | null;
   numero_commande?: string | null;
   notes?: string | null;
-  lines: Array<{
-    produit_id: string | null;
-    ref: string;
-    designation: string;
-    quantite: number;
-    prix_unitaire_ht: number;
-  }>;
+  lines: DocumentLinePayload[] | EditableDocumentLine[];
+  statut?: DocumentStatus;
 }
 
-export function useDocuments() {
+export function useDocuments(): UseDocumentsReturn {
   const organization = useAuthStore(state => state.organization);
-  const [documents, setDocuments] = React.useState<DocumentWithRelations[]>([]);
-  const [clients, setClients] = React.useState<Client[]>([]);
-  const [produits, setProduits] = React.useState<Produit[]>([]);
-  const [loading, setLoading] = React.useState(false);
+  const [documents, setDocuments] = useState<DocumentWithRelations[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [produits, setProduits] = useState<Produit[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const fetchDocuments = React.useCallback(async () => {
-    if (!organization) return;
-    setLoading(true);
-
-    const [{ data: docs, error }, clientsRes, produitsRes] = await Promise.all([
-      supabase.from('documents').select('*').eq('organization_id', organization.id).order('created_at', { ascending: false }),
-      supabase.from('clients').select('*').eq('organization_id', organization.id).order('nom'),
-      supabase.from('produits').select('*').eq('organization_id', organization.id).order('nom'),
-    ]);
-
-    setLoading(false);
-
-    if (error) {
-      Alert.alert('Documents', error.message);
+  const fetchDocuments = useCallback(async () => {
+    if (!organization) {
+      setDocuments([]);
       return;
     }
 
-    const rawDocs = (docs as Document[]) ?? [];
-    const clientList = (clientsRes.data as Client[]) ?? [];
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('documents')
+        .select(`
+          *,
+          client:clients(*),
+          lignes:document_lignes(*)
+        `)
+        .eq('organization_id', organization.id)
+        .order('created_at', { ascending: false });
 
-    const { data: lignes } = await supabase
-      .from('document_lignes')
-      .select('*')
-      .in('document_id', rawDocs.map(doc => doc.id));
-
-    const lineList = (lignes as DocumentLigne[]) ?? [];
-
-    setClients(clientList);
-    setProduits((produitsRes.data as Produit[]) ?? []);
-    setDocuments(
-      rawDocs.map(doc => ({
-        ...doc,
-        client: clientList.find(client => client.id === doc.client_id) ?? null,
-        lignes: lineList.filter(line => line.document_id === doc.id),
-      })),
-    );
+      if (error) throw error;
+      setDocuments(data || []);
+    } catch (error) {
+      console.error('Error fetching documents:', error);
+      Alert.alert('Erreur', 'Impossible de charger les documents');
+    } finally {
+      setLoading(false);
+    }
   }, [organization]);
 
-  React.useEffect(() => {
-    void fetchDocuments();
-  }, [fetchDocuments]);
-
-  const fetchDocumentsByType = React.useCallback(async (type: DocumentType) => {
-    if (!organization) return [];
-
-    const { data, error } = await supabase
-      .from('documents').select('*')
-      .eq('organization_id', organization.id)
-      .eq('type', type)
-      .order('created_at', { ascending: false });
-
-    if (error) { Alert.alert('Documents', error.message); return []; }
-
-    const docs = (data as Document[]) ?? [];
-    const clientIds = [...new Set(docs.map(d => d.client_id).filter(Boolean))];
-    const { data: clientsData } = await supabase.from('clients').select('*').in('id', clientIds);
-    const clientList = (clientsData as Client[]) ?? [];
-    const { data: lignesData } = await supabase.from('document_lignes').select('*').in('document_id', docs.map(d => d.id));
-    const lineList = (lignesData as DocumentLigne[]) ?? [];
-
-    return docs.map(doc => ({
-      ...doc,
-      client: clientList.find(c => c.id === doc.client_id) ?? null,
-      lignes: lineList.filter(l => l.document_id === doc.id),
-    }));
-  }, [organization]);
-
-  const fetchDocumentsByClient = React.useCallback(async (clientId: string) => {
-    if (!organization) return [];
-
-    const { data, error } = await supabase
-      .from('documents').select('*')
-      .eq('organization_id', organization.id)
-      .eq('client_id', clientId)
-      .order('created_at', { ascending: false });
-
-    if (error) { Alert.alert('Documents', error.message); return []; }
-
-    const docs = (data as Document[]) ?? [];
-    const { data: lignesData } = await supabase.from('document_lignes').select('*').in('document_id', docs.map(d => d.id));
-    const lineList = (lignesData as DocumentLigne[]) ?? [];
-    const clientData = clients.find(c => c.id === clientId) ?? null;
-
-    return docs.map(doc => ({
-      ...doc,
-      client: clientData,
-      lignes: lineList.filter(l => l.document_id === doc.id),
-    }));
-  }, [organization, clients]);
-
-  const saveDocument = async (payload: DocumentPayload) => {
-    if (!organization) return false;
-
-    const subtotal = payload.lines.reduce((sum, line) => sum + line.quantite * line.prix_unitaire_ht, 0);
-    const tauxTva = organization.tva ?? 20;
-    const totalTva = subtotal * (tauxTva / 100);
-
-    const { data: documentData, error } = await supabase
-      .from('documents')
-      .upsert({
-        id: payload.id,
-        organization_id: organization.id,
-        type: payload.type,
-        date_document: payload.date_document,
-        client_id: payload.client_id ?? null,
-        lieu_livraison: payload.lieu_livraison ?? null,
-        numero_commande: payload.numero_commande ?? null,
-        notes: payload.notes ?? null,
-        taux_tva: tauxTva,
-        sous_total_ht: subtotal,
-        montant_tva: totalTva,
-        total_ttc: subtotal + totalTva,
-      })
-      .select('*')
-      .single();
-
-    const savedDocument = (documentData as Document | null) ?? null;
-
-    if (error || !savedDocument) {
-      Alert.alert('Document', error?.message ?? 'Erreur inconnue');
-      return false;
-    }
-
-    await supabase.from('document_lignes').delete().eq('document_id', savedDocument.id);
-
-    if (payload.lines.length > 0) {
-      const { error: linesError } = await supabase.from('document_lignes').insert(
-        payload.lines.map(line => ({
-          document_id: savedDocument.id,
-          produit_id: line.produit_id || null,
-          ref: line.ref,
-          designation: line.designation,
-          quantite: line.quantite,
-          prix_unitaire_ht: line.prix_unitaire_ht,
-          total_ht: line.quantite * line.prix_unitaire_ht,
-        })),
-      );
-
-      if (linesError) {
-        Alert.alert('Lignes du document', linesError.message);
-        return false;
-      }
-    }
-
-    await fetchDocuments();
-    return true;
-  };
-
-  const updateStatus = async (documentId: string, statut: Document['statut']) => {
-    const { error } = await supabase.from('documents').update({ statut }).eq('id', documentId);
-    if (error) { Alert.alert('Statut document', error.message); return false; }
-    await fetchDocuments();
-    return true;
-  };
-
-  const duplicateDocument = async (document: DocumentWithRelations, type: DocumentType) => {
-    const success = await saveDocument({
-      type,
-      date_document: new Date().toISOString().slice(0, 10),
-      client_id: document.client_id,
-      lieu_livraison: document.lieu_livraison,
-      numero_commande: document.numero_commande,
-      notes: document.notes,
-      lines: document.lignes?.map(line => ({
-        produit_id: line.produit_id,
-        ref: line.ref ?? '',
-        designation: line.designation,
-        quantite: line.quantite,
-        prix_unitaire_ht: line.prix_unitaire_ht,
-      })) ?? [],
-    });
-
-    if (success) {
-      Alert.alert('Document créé', `Conversion vers ${type} réalisée.`);
-    }
-  };
-
-  const exportAndShare = async (document: DocumentWithRelations) => {
-    if (!organization || !document.lignes?.length) {
-      Alert.alert('Erreur', 'Document vide ou organisation introuvable');
+  const fetchClients = useCallback(async () => {
+    if (!organization) {
+      setClients([]);
       return;
     }
 
     try {
-      const filePath = await generateDocumentPdf(organization, document, document.lignes);
-      await shareFile(filePath, document.numero);
+      const { data, error } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('organization_id', organization.id)
+        .order('nom');
+
+      if (error) throw error;
+      setClients(data || []);
     } catch (error) {
-      Alert.alert('PDF', `Erreur: ${String(error)}`);
+      console.error('Error fetching clients:', error);
     }
-  };
+  }, [organization]);
 
-  React.useEffect(() => {
-    if (!organization) return;
+  const fetchProduits = useCallback(async () => {
+    if (!organization) {
+      setProduits([]);
+      return;
+    }
 
-    const channelName = `documents-changes-${organization.id}-${Date.now()}`;
+    try {
+      const { data, error } = await supabase
+        .from('produits')
+        .select('*')
+        .eq('organization_id', organization.id)
+        .order('nom');
 
-    const channel = supabase
-      .channel(channelName)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'documents', filter: `organization_id=eq.${organization.id}` }, () => { void fetchDocuments(); })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'document_lignes' }, () => { void fetchDocuments(); })
-      .subscribe();
+      if (error) throw error;
+      setProduits(data || []);
+    } catch (error) {
+      console.error('Error fetching produits:', error);
+    }
+  }, [organization]);
 
-    return () => { void supabase.removeChannel(channel); };
+  const saveDocument = useCallback(async (data: SaveDocumentData): Promise<boolean> => {
+    if (!organization) {
+      Alert.alert('Erreur', 'Organisation non disponible');
+      return false;
+    }
+
+    try {
+      const sousTotal = data.lines.reduce((sum, line) => 
+        sum + (line.quantite * line.prix_unitaire_ht), 0
+      );
+      const tauxTva = 0;
+      const montantTva = 0;
+      const totalTtc = sousTotal;
+
+      const numero = data.id 
+        ? undefined 
+        : generateDocumentNumber(data.type, documents.map(d => d.numero));
+
+      const documentData = {
+        ...(numero ? { numero } : {}),
+        organization_id: organization.id,
+        type: data.type,
+        date_document: data.date_document,
+        client_id: data.client_id,
+        lieu_livraison: data.lieu_livraison,
+        numero_commande: data.numero_commande,
+        notes: data.notes,
+        statut: data.statut || 'brouillon',
+        taux_tva: tauxTva,
+        sous_total_ht: sousTotal,
+        montant_tva: montantTva,
+        total_ttc: totalTtc,
+      };
+
+      let docId = data.id;
+
+      if (data.id) {
+        const { error } = await supabase
+          .from('documents')
+          .update(documentData)
+          .eq('id', data.id)
+          .eq('organization_id', organization.id);
+        
+        if (error) throw error;
+        
+        await supabase
+          .from('document_lignes')
+          .delete()
+          .eq('document_id', data.id);
+      } else {
+        const { data: newDoc, error } = await supabase
+          .from('documents')
+          .insert(documentData)
+          .select()
+          .single();
+        
+        if (error) throw error;
+        docId = newDoc.id;
+      }
+
+      if (docId && data.lines.length > 0) {
+        const lignesData = data.lines.map(line => ({
+          document_id: docId,
+          produit_id: line.produit_id,
+          ref: line.ref,
+          designation: line.designation,
+          quantite: line.quantite,
+          unite: (line as EditableDocumentLine).unite ?? null,
+          prix_unitaire_ht: line.prix_unitaire_ht,
+          total_ht: line.quantite * line.prix_unitaire_ht,
+        }));
+
+        const { error: lignesError } = await supabase
+          .from('document_lignes')
+          .insert(lignesData);
+
+        if (lignesError) throw lignesError;
+      }
+
+      await fetchDocuments();
+      return true;
+    } catch (error) {
+      console.error('Error saving document:', error);
+      Alert.alert('Erreur', 'Impossible de sauvegarder le document');
+      return false;
+    }
+  }, [organization, documents, fetchDocuments]);
+
+  const deleteDocument = useCallback(async (id: string): Promise<boolean> => {
+    if (!organization) return false;
+
+    try {
+      const { error } = await supabase
+        .from('documents')
+        .delete()
+        .eq('id', id)
+        .eq('organization_id', organization.id);
+      
+      if (error) throw error;
+      await fetchDocuments();
+      return true;
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      Alert.alert('Erreur', 'Impossible de supprimer le document');
+      return false;
+    }
   }, [organization, fetchDocuments]);
+
+  const generatePdf = useCallback(async (doc: DocumentWithRelations): Promise<string> => {
+    const org = organization || doc.client?.nom;
+
+    if (!org) throw new Error('Organization not found');
+
+    const orgData = typeof org === 'string'
+      ? { id: '', nom: org, adresse: '', telephone: '', email: '', ice: '', rc: '', logo_url: '', type: 'cooperative' as const, tva: 0 }
+      : org;
+
+    const lignes = doc.lignes || [];
+    const filePath = await generateDocumentPdf(orgData, doc, lignes);
+    return filePath;
+  }, [organization]);
+
+  const exportAndShare = useCallback(async (doc: DocumentWithRelations) => {
+    try {
+      const filePath = await generatePdf(doc);
+      await sharePdf(filePath, `${doc.type} ${doc.numero}`);
+    } catch (error) {
+      console.error('Error sharing:', error);
+      Alert.alert('Erreur', 'Impossible de partager le document');
+    }
+  }, [generatePdf]);
 
   return {
     documents,
@@ -248,11 +255,11 @@ export function useDocuments() {
     produits,
     loading,
     fetchDocuments,
-    fetchDocumentsByType,
-    fetchDocumentsByClient,
+    fetchClients,
+    fetchProduits,
     saveDocument,
-    updateStatus,
-    duplicateDocument,
+    deleteDocument,
     exportAndShare,
+    generatePdf,
   };
 }
